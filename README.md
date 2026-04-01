@@ -69,6 +69,8 @@ Private Matrix of Infinite Death Nightfall Iteration Generation Host Terminal
 - **熊德**：相对OK，可以用在13层及以下的大米，需要自行提前开爆发、本能。
 - **奶德**：制作中。
 
+PS：目前熊T和血DK还是下水道难兄难弟，还是需要有点副本理解才能玩的。
+
 ### 爆发宏
 ```
 /burst x.x
