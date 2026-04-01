@@ -1,5 +1,8 @@
 # M.I.D.N.I.G.H.T
+
 Private Matrix of Infinite Death Nightfall Iteration Generation Host Terminal
+
+- 这个repo是`DejaVu`和`Terminal`两个模块的整合。维持MIT开源。`AGENTS.md`、`.vscode`等和项目本身无关的文件，做了删除。
 
 ## 基本介绍
 
