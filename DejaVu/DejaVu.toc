@@ -84,6 +84,8 @@ libs\load_libs.xml
 06_spec/durid/spec.lua
 06_spec/durid/setting.lua
 06_spec/durid/guardian.lua
+06_spec/durid/restoration.lua
+#
 06_spec/deathknight/spec.lua
 06_spec/deathknight/setting.lua
 06_spec/deathknight/blood.lua

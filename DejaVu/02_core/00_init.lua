@@ -2,5 +2,5 @@
 local addonName, addonTable = ... -- luacheck: ignore addonName
 
 addonTable.Core = {}
-addonTable.DEBUG = true
+addonTable.DEBUG = false
 addonTable.Enable = true

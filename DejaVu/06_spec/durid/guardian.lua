@@ -24,12 +24,47 @@ local GetSpecialization                 = GetSpecialization
 -- 专精错误则停止
 local className, classFilename, classId = UnitClass("player")
 local currentSpec                       = GetSpecialization()
-if classFilename ~= "DRUID" then return end   -- 不是德鲁伊则停止
-if currentSpec ~= 3 then return end           -- 不是守护专精则停止
-local logging   = addonTable.Logging
-local InitUI    = addonTable.Listeners.InitUI -- 初始化入口列表
-local Cell      = addonTable.Cell             -- 基础色块单元
-local Config    = addonTable.Config           -- 配置对象工厂
+if classFilename ~= "DRUID" then return end        -- 不是德鲁伊则停止
+if currentSpec ~= 3 then return end                -- 不是守护专精则停止
+local logging        = addonTable.Logging
+local InitUI         = addonTable.Listeners.InitUI -- 初始化入口列表
+local Cell           = addonTable.Cell             -- 基础色块单元
+local Config         = addonTable.Config           -- 配置对象工厂
+local Slots          = addonTable.Slots
+
+local chargeSpells   = Slots.chargeSpells                         -- 充能技能列表
+local cooldownSpells = Slots.cooldownSpells                       -- 普通冷却技能列表
+
+insert(cooldownSpells, { spellID = 102793, cdType = "cooldown" }) --  [乌索尔旋风]
+insert(cooldownSpells, { spellID = 6795, cdType = "cooldown" })   --  [低吼]
+insert(cooldownSpells, { spellID = 132469, cdType = "cooldown" }) --  [台风]
+insert(cooldownSpells, { spellID = 210053, cdType = "cooldown" }) --  [坐骑形态]
+insert(cooldownSpells, { spellID = 20484, cdType = "cooldown" })  --  [复生]
+insert(cooldownSpells, { spellID = 99, cdType = "cooldown" })     --  [夺魂咆哮]
+insert(cooldownSpells, { spellID = 2908, cdType = "cooldown" })   --  [安抚]
+insert(cooldownSpells, { spellID = 8936, cdType = "cooldown" })   --  [愈合]
+insert(cooldownSpells, { spellID = 783, cdType = "cooldown" })    --  [旅行形态]
+insert(cooldownSpells, { spellID = 8921, cdType = "cooldown" })   --  [月火术]
+insert(cooldownSpells, { spellID = 22812, cdType = "cooldown" })  --  [树皮术]
+insert(cooldownSpells, { spellID = 213771, cdType = "cooldown" }) --  [横扫]
+insert(cooldownSpells, { spellID = 2782, cdType = "cooldown" })   --  [清除腐蚀]
+insert(cooldownSpells, { spellID = 5487, cdType = "cooldown" })   --  [熊形态]
+insert(cooldownSpells, { spellID = 77761, cdType = "cooldown" })  --  [狂奔怒吼]
+insert(cooldownSpells, { spellID = 77758, cdType = "cooldown" })  --  [痛击]
+insert(cooldownSpells, { spellID = 16979, cdType = "cooldown" })  --  [野性冲锋]
+insert(cooldownSpells, { spellID = 1126, cdType = "cooldown" })   --  [野性印记]
+insert(cooldownSpells, { spellID = 192081, cdType = "cooldown" }) --  [铁鬃]
+insert(cooldownSpells, { spellID = 102558, cdType = "cooldown" }) --  [化身：乌索克的守护者]
+insert(cooldownSpells, { spellID = 204066, cdType = "cooldown" }) --  [明月普照]
+insert(cooldownSpells, { spellID = 106839, cdType = "cooldown" }) --  [迎头痛击]
+insert(cooldownSpells, { spellID = 6807, cdType = "cooldown" })   --  [重殴]
+
+
+insert(chargeSpells, { spellID = 22842, cdType = "charges" }) --  [狂暴回复]
+insert(chargeSpells, { spellID = 33917, cdType = "charges" }) --  [裂伤]
+insert(chargeSpells, { spellID = 61336, cdType = "charges" }) --  [生存本能]
+
+
 
 local macroList = {}
 insert(macroList, { title = "reloadUI", key = "CTRL-F12", text = "/reload" })

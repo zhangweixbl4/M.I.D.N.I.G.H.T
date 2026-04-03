@@ -28,17 +28,35 @@ local currentSpec                       = GetSpecialization()
 if classFilename ~= "DEATHKNIGHT" then return end -- 不是死亡骑士则停止
 if currentSpec ~= 1 then return end               -- 不是鲜血专精则停止
 -- 插件内引用
-local logging = addonTable.Logging
-local InitUI  = addonTable.Listeners.InitUI -- 初始化入口列表
-local Cell    = addonTable.Cell             -- 基础色块单元
-local Config  = addonTable.Config           -- 配置对象工厂
+local logging        = addonTable.Logging
+local InitUI         = addonTable.Listeners.InitUI -- 初始化入口列表
+local Cell           = addonTable.Cell      -- 基础色块单元
+local Config         = addonTable.Config    -- 配置对象工厂
+local Slots          = addonTable.Slots
 
+local chargeSpells   = Slots.chargeSpells                          -- 充能技能列表
+local cooldownSpells = Slots.cooldownSpells                        -- 普通冷却技能列表
 
+insert(cooldownSpells, { spellID = 46585, cdType = "cooldown" })   --  亡者复生
+insert(cooldownSpells, { spellID = 48792, cdType = "cooldown" })   --  [冰封之韧]
+insert(cooldownSpells, { spellID = 48707, cdType = "cooldown" })   --  [反魔法护罩]
+insert(cooldownSpells, { spellID = 51052, cdType = "cooldown" })   --  [反魔法领域]
+insert(cooldownSpells, { spellID = 61999, cdType = "cooldown" })   --  [复活盟友]
+insert(cooldownSpells, { spellID = 47528, cdType = "cooldown" })   --  [心灵冰冻]
+insert(cooldownSpells, { spellID = 49998, cdType = "cooldown" })   --  [灵界打击]
+insert(cooldownSpells, { spellID = 207167, cdType = "cooldown" })  --  [致盲冰雨]
+insert(cooldownSpells, { spellID = 55233, cdType = "cooldown" })   --  [吸血鬼之血]
+insert(cooldownSpells, { spellID = 206930, cdType = "cooldown" })  --  [心脏打击]
+insert(cooldownSpells, { spellID = 1263569, cdType = "cooldown" }) --  [憎恶附肢]
+insert(cooldownSpells, { spellID = 439843, cdType = "cooldown" })  --  [死神印记]
+insert(cooldownSpells, { spellID = 195292, cdType = "cooldown" })  --  [死神的抚摩]
+insert(cooldownSpells, { spellID = 49028, cdType = "cooldown" })   --  [符文刃舞]
+insert(cooldownSpells, { spellID = 195182, cdType = "cooldown" })  --  [精髓分裂]
 
-
-
-
-
+insert(chargeSpells, { spellID = 43265, cdType = "charges" })      --  [枯萎凋零]
+insert(chargeSpells, { spellID = 49576, cdType = "charges" })      --  [死亡之握]
+insert(chargeSpells, { spellID = 48265, cdType = "charges" })      --  [死亡脚步]
+insert(chargeSpells, { spellID = 50842, cdType = "charges" })      --  [血液沸腾]
 
 
 local macroList = {}

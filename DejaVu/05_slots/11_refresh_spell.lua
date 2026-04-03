@@ -27,7 +27,10 @@ local cooldownSpells = Slots.cooldownSpells -- 普通冷却技能列表
 local logging = addonTable.Logging
 
 
-
+InsertTable(cooldownSpells, {
+    spellID = 61304, --  公共冷却
+    cdType = "cooldown"
+})
 
 
 --- 获取技能冷却类型信息
@@ -108,34 +111,48 @@ local function CollectActiveSpells()
 end
 
 local function UpdateSpellsTable()
-    Wipe(chargeSpells)
-    Wipe(cooldownSpells)
+    -- Wipe(chargeSpells)
+    -- Wipe(cooldownSpells)
 
     local spells = CollectActiveSpells()
 
-    for spellIndex = 1, #spells do
-        local spell = spells[spellIndex]
-        if spell.cdType == "charges" then
-            InsertTable(chargeSpells, spell)
-        else
-            InsertTable(cooldownSpells, spell)
-        end
-    end
+    -- for spellIndex = 1, #spells do
+    --     local spell = spells[spellIndex]
+    --     if spell.cdType == "charges" then
+    --         InsertTable(chargeSpells, spell)
+    --     else
+    --         InsertTable(cooldownSpells, spell)
+    --     end
+    -- end
+    -- if addonTable.DEBUG then
+    --     logging("cooldownSpells: " .. #cooldownSpells)
 
-    logging("cooldownSpells: " .. #cooldownSpells)
-    for _, spell in ipairs(cooldownSpells) do
-        local spellLink = GetSpellLink(spell.spellID)
-        logging("技能冷却[" .. spell.spellID .. "]" .. spellLink .. ",类型:" .. spell.cdType)
-    end
-    logging("chargeSpells: " .. #chargeSpells)
-    for _, spell in ipairs(chargeSpells) do
-        local spellLink = GetSpellLink(spell.spellID)
-        logging("技能冷却[" .. spell.spellID .. "]" .. spellLink .. ",类型:" .. spell.cdType)
-    end
+    --     for _, spell in ipairs(cooldownSpells) do
+    --         local spellLink = GetSpellLink(spell.spellID)
+
+    --         logging("技能冷却[" .. spell.spellID .. "]" .. spellLink .. ",类型:" .. spell.cdType)
+    --     end
+
+    --     logging("chargeSpells: " .. #chargeSpells)
+    --     for _, spell in ipairs(chargeSpells) do
+    --         local spellLink = GetSpellLink(spell.spellID)
+
+    --         logging("技能冷却[" .. spell.spellID .. "]" .. spellLink .. ",类型:" .. spell.cdType)
+    --     end
+    -- end
 
 
     -- logging("chargeSpells: " .. #chargeSpells)
     -- logging("cooldownSpells: " .. #cooldownSpells)
+    for spellIndex = 1, #spells do
+        local spell = spells[spellIndex]
+        local spellLink = GetSpellLink(spell.spellID)
+        if spell.cdType == "charges" then
+            logging("技能充能[" .. spell.spellID .. "]" .. spellLink .. ",类型:" .. spell.cdType)
+        else
+            logging("技能冷却[" .. spell.spellID .. "]" .. spellLink .. ",类型:" .. spell.cdType)
+        end
+    end
 end
-InsertTable(InitUI, UpdateSpellsTable)                -- 初始化时建立技能列表
-InsertTable(PLAYER_TALENT_CHANGED, UpdateSpellsTable) -- 天赋变更时刷新技能列表
+InsertTable(InitUI, UpdateSpellsTable) -- 初始化时建立技能列表
+-- InsertTable(PLAYER_TALENT_CHANGED, UpdateSpellsTable) -- 天赋变更时刷新技能列表
