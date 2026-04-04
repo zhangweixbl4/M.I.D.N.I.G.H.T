@@ -32,7 +32,7 @@ class RestorationPartyMember(Unit):
 
 class DruidRestoration(BaseRotation):
     name = "奶德"
-    desc = "奶德的循环逻辑。"
+    desc = "奶德的循环逻辑。\n 使用\"/burst 时间\"启动预铺模式。"
 
     def __init__(self) -> None:
         super().__init__()
@@ -571,7 +571,7 @@ class DruidRestoration(BaseRotation):
         #   - 撕碎
         if target.exists and target.isInMeleeRange and target.canAttack:
             if in_cat_form and ctx.spell_cooldown_ready("野性之心", spell_queue_window):
-                print(f"对{target.unitToken}施放野性之心", end="; ")
+                # print(f"对{target.unitToken}施放野性之心", end="; ")
                 return self.cast("target野性之心")
             elif (combat_point >= 5) and in_cat_form and ctx.spell_cooldown_ready("割裂", spell_queue_window) and (not target.hasDebuff("割裂")):
                 return self.cast("target割裂")
