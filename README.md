@@ -81,6 +81,8 @@ T不断小条
 节点尾王： `1257613`
 熊不断执政老2：`248831`
 
+## 排错思路
 
+- [经验分享](https://github.com/liantian-cn/M.I.D.N.I.G.H.T/discussions/3)
    
 
