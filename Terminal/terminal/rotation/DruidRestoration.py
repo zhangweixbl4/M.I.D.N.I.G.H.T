@@ -1,44 +1,60 @@
 from __future__ import annotations
 from typing import cast
 from .base import BaseRotation
-from datetime import datetime
 from terminal.context import Context, Unit
+
+
+__all__ = ["DruidRestoration",]
+
+# 全局变量。设置窗体不够，这些修改较少的，放在变量里。
+WILD_GROWTH_COUNT_THRESHOLD = 2  # 野性成长人数阈值
+TANK_HEALTH_SCORE_MULTIPLIER = 1.10
+HEALER_HEALTH_SCORE_MULTIPLIER = 0.95
 
 
 class RestorationPartyMember(Unit):
     # 只在当前 rotation 内补充类型信息，不改 Unit 本体。
-    rejuv_remaining: float
+    rejuvenation_remaining: float
+    germination_remaining: float
     regrowth_remaining: float
-    wildgrowth_remaining: float
+    wild_growth_remaining: float
     lifebloom_remaining: float
-    healthScore: float
-    healthDeficit: float
+    health_score: float
+    health_deficit: float
+    health_base: float
+    rejuvenation_count: int
+    hot_count: int
+    dispel_list: list[str]
+    debuff_list: list[str]
+    buff_list: list[str]
+    can_dispel: bool
 
 
 class DruidRestoration(BaseRotation):
     name = "奶德"
-    desc = "利爪，兼容月光。"
+    desc = "奶德的循环逻辑。"
 
     def __init__(self) -> None:
         super().__init__()
 
-        self.tank_health_score_mul = 1.10  # TANK健康分数系数
-        self.tank_deficit_ignore_pct = 0.15  # 当TANK血量缺口超过这个百分比时，忽略TANK的血量缺口评分
-        self.healer_health_score_mul = 0.95  # HEALER健康分数系数
-        self.ironbark_hp_threshold = 0.50  # 铁木树皮血量阈值
-        self.barkskin_hp_threshold = 0.66  # 树皮术血量阈值
-        self.convoke_party_hp_threshold = 0.65  # 万灵队血阈值
-        self.convoke_single_hp_threshold = 0.2  # 万灵单体阈值
-        self.wild_growth_count_threshold = 2  # 野性成长人数阈值
-        self.wild_growth_hp_threshold = 0.95  # 野性成长血量阈值
-        self.tranquility_party_hp_threshold = 0.5  # 宁静队血阈值
-        self.nature_swiftness_hp_threshold = 0.6  # 自然迅捷血量阈值
-        self.swiftmend_count_threshold = 3  # 迅捷治愈人数阈值
-        self.swiftmend_hp_threshold = 0.8  # 迅捷治愈血量阈值
-        self.regrowth_hp_threshold = 0.8  # 愈合阈值
-        self.rejuvenation_hp_threshold = 0.99  # 回春阈值
+        self.tank_health_score_multiplier = TANK_HEALTH_SCORE_MULTIPLIER  # TANK 健康分数系数
+        self.tank_deficit_ignore_percent = 15  # 计算坦克的血量时，当坦克的血量缺口小于这个百分比时，认为坦克是满血的
+        self.healer_health_score_multiplier = HEALER_HEALTH_SCORE_MULTIPLIER  # HEALER 健康分数系数
+        self.ironbark_hp_threshold = 50  # 铁木树皮血量阈值
+        self.barkskin_hp_threshold = 65  # 树皮术血量阈值
+        self.convoke_party_hp_threshold = 65  # 万灵队血阈值
+        self.convoke_single_hp_threshold = 20  # 万灵单体阈值
+        self.wild_growth_count_threshold = WILD_GROWTH_COUNT_THRESHOLD  # 野性成长人数阈值
+        self.wild_growth_hp_threshold = 95  # 野性成长血量阈值
+        self.tranquility_party_hp_threshold = 50  # 宁静队血阈值
+        self.nature_swiftness_hp_threshold = 60  # 自然迅捷血量阈值
+        self.swiftmend_hp_threshold = 90  # 迅捷治愈血量
+        self.swiftmend_count_threshold = 2  # 迅捷治愈人数
+        self.regrowth_hp_threshold = 85  # 愈合血量
+        self.rejuvenation_hp_threshold = 99  # 回春血量
         self.abundance_stack_threshold = 5  # 丰饶层数阈值
-        self.DISPEL_TYPES = {"MAGIC", "CURSE", "POISON"}  # 可驱散 debuff 类型
+        self.dispel_types = {"MAGIC", "CURSE", "POISON"}  # 可驱散的 debuff 类型
+        self.dispel_blacklist: list[str] = []
 
         self.macroTable = {
             "player铁木树皮": "ALT-NUMPAD1",
@@ -81,6 +97,13 @@ class DruidRestoration(BaseRotation):
             "宁静": "SHIFT-F10",
             "自然迅捷": "SHIFT-F11",
             "迅捷治愈": "SHIFT-F12",
+            "target斜掠": "CTRL-NUMPAD1",
+            "target撕碎": "CTRL-NUMPAD2",
+            "target割裂": "CTRL-NUMPAD3",
+            "target野性之心": "CTRL-NUMPAD4",
+            "target月火术": "CTRL-NUMPAD5",
+            "target愤怒": "CTRL-NUMPAD6",
+            "激活": "CTRL-NUMPAD7",
         }
 
     def calculate_party_health_score(self, ctx: Context) -> list[RestorationPartyMember]:
@@ -92,373 +115,449 @@ class DruidRestoration(BaseRotation):
         party_members.append(cast(RestorationPartyMember, ctx.player))
 
         for member in party_members:
-            unitRole = member.unitRole
-            unitClass = member.unitClass
-            healthPercent = member.healthPercent
-            hasBigDefense = member.hasBigDefense
-            damageAbsorbs = member.damageAbsorbs
-            healAbsorbs = member.healAbsorbs
-            rejuv_remaining = member.buffRemain("回春术")
-            rejuv_copy_remaining = member.buffRemain("萌芽")
+            unit_role = member.unitRole
+            health_percent = member.healthPercent
+            damage_absorbs = member.damageAbsorbs
+            heal_absorbs = member.healAbsorbs
+            rejuvenation_remaining = member.buffRemain("回春术")
+            germination_remaining = member.buffRemain("萌芽")
             regrowth_remaining = member.buffRemain("愈合")
-            wildgrowth_remaining = member.buffRemain("野性成长")
+            wild_growth_remaining = member.buffRemain("野性成长")
             lifebloom_remaining = member.buffRemain("生命绽放")
-            rejuv_count = 0
-            if rejuv_remaining > spell_queue_window:
-                rejuv_count += 1
-            if rejuv_copy_remaining > spell_queue_window:
-                rejuv_count += 1
-            # 血量基线: 当前血量 - 治疗吸收
-            healthBase = healthPercent - healAbsorbs
-            # 缺口 = 就是加满血所需要的治疗。
-            healthDeficit = 1 - healthBase
-            healthScore = healthBase + damageAbsorbs
+            rejuvenation_count = 0
+            hot_count = 0
+            if rejuvenation_remaining > spell_queue_window:
+                rejuvenation_count += 1
+                hot_count += 1
+            if germination_remaining > spell_queue_window:
+                rejuvenation_count += 1
+                hot_count += 1
+            if regrowth_remaining > spell_queue_window:
+                hot_count += 1
+            if wild_growth_remaining > spell_queue_window:
+                hot_count += 1
+            if lifebloom_remaining > spell_queue_window:
+                hot_count += 1
+
+            # 血量基线使用“当前血量 - 治疗吸收”，数值越低说明越危险。
+            health_base = health_percent - heal_absorbs
+            # 血量缺口表示补满到 100% 还需要多少治疗量。
+            health_deficit = 100 - health_base
+            # 健康分数越低越优先，伤害吸收越多会让单位看起来更安全。
+            health_score = health_base + damage_absorbs
 
             # 角色修正：可通过系数调高坦克优先级、调低治疗职业优先级。
-            if unitRole == "TANK":
-                healthScore *= self.tank_health_score_mul
-            elif unitRole == "HEALER":
-                healthScore *= self.healer_health_score_mul
+            if unit_role == "TANK":
+                health_score *= self.tank_health_score_multiplier
+            elif unit_role == "HEALER":
+                health_score *= self.healer_health_score_multiplier
 
-            # 可驱散debuff
-            dispel_list = [debuff.title for debuff in member.debuff if (debuff.type in self.DISPEL_TYPES)]
+            if unit_role == "TANK":
+                if health_deficit < self.tank_deficit_ignore_percent:
+                    health_deficit = 0
+                    health_base = 100
+                    health_score = health_base + damage_absorbs
 
-            # debuff列表
+            # 先找出单位身上可驱散的 debuff，再按黑名单过滤。
+            dispel_list = [debuff.title for debuff in member.debuff if (debuff.type in self.dispel_types)]
+            can_dispel = len(dispel_list) > 0
+            for dispel in dispel_list:
+                if dispel in self.dispel_blacklist:
+                    can_dispel = False
+                    break
+
+            # 记录完整 debuff 列表，方便调试和后续扩展判断。
             debuff_list = [debuff.title for debuff in member.debuff]
 
-            member.rejuv_remaining = rejuv_remaining
-            member.regrowth_remaining = regrowth_remaining
-            member.wildgrowth_remaining = wildgrowth_remaining
-            member.lifebloom_remaining = lifebloom_remaining
-            member.healthScore = healthScore
-            member.healthDeficit = healthDeficit
+            # 记录完整 buff 列表，方便调试和后续扩展判断。
+            buff_list = [buff.title for buff in member.buff]
+
+            member.rejuvenation_remaining = rejuvenation_remaining  # 回春术剩余时间
+            member.germination_remaining = germination_remaining  # 萌芽剩余时间，等价于第二个回春
+            member.regrowth_remaining = regrowth_remaining  # 愈合剩余时间
+            member.wild_growth_remaining = wild_growth_remaining  # 野性成长剩余时间
+            member.lifebloom_remaining = lifebloom_remaining  # 生命绽放剩余时间
+            member.health_score = health_score  # 综合健康分数，数值越低越优先处理
+            member.health_deficit = health_deficit  # 血量缺口，数值越高说明越缺治疗
+            member.health_base = health_base  # 当前血量减治疗吸收后的基线，数值越低越危险
+            member.dispel_list = dispel_list  # 可驱散debuff列表
+            member.debuff_list = debuff_list  # debuff列表
+            member.buff_list = buff_list  # buff列表
+            member.rejuvenation_count = rejuvenation_count  # 回春层数，可能是 0 层、1 层、2 层
+            member.can_dispel = can_dispel  # 是否有可驱散的debuff
+            member.hot_count = hot_count  # 身上剩余的 HoT 数量（回春、萌芽、愈合、野性成长、生命绽放）
 
         return party_members
 
+    def read_config(self, ctx: Context):
+        restoration_ironbark_hp_threshold_cell = ctx.setting.cell(0)
+        if restoration_ironbark_hp_threshold_cell is None:
+            self.ironbark_hp_threshold = 50
+        else:
+            self.ironbark_hp_threshold = float(restoration_ironbark_hp_threshold_cell.mean)
+            # print(f"{self.ironbark_hp_threshold=}", end="; ")
+
+        restoration_barkskin_hp_threshold_cell = ctx.setting.cell(1)
+        if restoration_barkskin_hp_threshold_cell is None:
+            self.barkskin_hp_threshold = 65
+        else:
+            self.barkskin_hp_threshold = float(restoration_barkskin_hp_threshold_cell.mean)
+            # print(f"{self.barkskin_hp_threshold=}", end="; ")
+
+        restoration_convoke_party_hp_threshold_cell = ctx.setting.cell(2)
+        if restoration_convoke_party_hp_threshold_cell is None:
+            self.convoke_party_hp_threshold = 65
+        else:
+            self.convoke_party_hp_threshold = float(restoration_convoke_party_hp_threshold_cell.mean)
+            # print(f"{self.convoke_party_hp_threshold=}", end="; ")
+
+        restoration_convoke_single_hp_threshold_cell = ctx.setting.cell(3)
+        if restoration_convoke_single_hp_threshold_cell is None:
+            self.convoke_single_hp_threshold = 20
+        else:
+            self.convoke_single_hp_threshold = float(restoration_convoke_single_hp_threshold_cell.mean)
+            # print(f"{self.convoke_single_hp_threshold=}", end="; ")
+
+        restoration_wild_growth_hp_threshold_cell = ctx.setting.cell(4)
+        if restoration_wild_growth_hp_threshold_cell is None:
+            self.wild_growth_hp_threshold = 95
+        else:
+            self.wild_growth_hp_threshold = float(restoration_wild_growth_hp_threshold_cell.mean)
+            # print(f"{self.wild_growth_hp_threshold=}", end="; ")
+
+        restoration_tranquility_party_hp_threshold_cell = ctx.setting.cell(5)
+        if restoration_tranquility_party_hp_threshold_cell is None:
+            self.tranquility_party_hp_threshold = 50
+        else:
+            self.tranquility_party_hp_threshold = float(restoration_tranquility_party_hp_threshold_cell.mean)
+            # print(f"{self.tranquility_party_hp_threshold=}", end="; ")
+
+        restoration_nature_swiftness_hp_threshold_cell = ctx.setting.cell(6)
+        if restoration_nature_swiftness_hp_threshold_cell is None:
+            self.nature_swiftness_hp_threshold = 60
+        else:
+            self.nature_swiftness_hp_threshold = float(restoration_nature_swiftness_hp_threshold_cell.mean)
+            # print(f"{self.nature_swiftness_hp_threshold=}", end="; ")
+
+        restoration_swiftmend_hp_threshold_cell = ctx.setting.cell(7)
+        if restoration_swiftmend_hp_threshold_cell is None:
+            self.swiftmend_hp_threshold = 90
+        else:
+            self.swiftmend_hp_threshold = float(restoration_swiftmend_hp_threshold_cell.mean)
+            # print(f"{self.swiftmend_hp_threshold=}", end="; ")
+
+        restoration_swiftmend_count_threshold_cell = ctx.setting.cell(8)
+        if restoration_swiftmend_count_threshold_cell is None:
+            self.swiftmend_count_threshold = 2
+        else:
+            self.swiftmend_count_threshold = int(round(restoration_swiftmend_count_threshold_cell.mean)/20)
+            # print(f"{self.swiftmend_count_threshold=}", end="; ")
+
+        restoration_regrowth_hp_threshold_cell = ctx.setting.cell(9)
+        if restoration_regrowth_hp_threshold_cell is None:
+            self.regrowth_hp_threshold = 85
+        else:
+            self.regrowth_hp_threshold = float(restoration_regrowth_hp_threshold_cell.mean)
+            # print(f"{self.regrowth_hp_threshold=}", end="; ")
+
+        restoration_rejuvenation_hp_threshold_cell = ctx.setting.cell(10)
+        if restoration_rejuvenation_hp_threshold_cell is None:
+            self.rejuvenation_hp_threshold = 99
+        else:
+            self.rejuvenation_hp_threshold = float(restoration_rejuvenation_hp_threshold_cell.mean)
+            # print(f"{self.rejuvenation_hp_threshold=}", end="; ")
+
+        restoration_abundance_stack_threshold_cell = ctx.setting.cell(11)
+        if restoration_abundance_stack_threshold_cell is None:
+            self.abundance_stack_threshold = 5
+        else:
+            self.abundance_stack_threshold = int(round(restoration_abundance_stack_threshold_cell.mean)/20)
+            # print(f"{self.abundance_stack_threshold=}", end="; ")
+
+        restoration_tank_deficit_ignore_percent_cell = ctx.setting.cell(12)
+        if restoration_tank_deficit_ignore_percent_cell is None:
+            self.tank_deficit_ignore_percent = 15
+        else:
+            self.tank_deficit_ignore_percent = float(restoration_tank_deficit_ignore_percent_cell.mean)
+            # print(f"{self.tank_deficit_ignore_percent=}", end="; ")
+
+        self.dispel_blacklist = ctx.dispel_blacklist
+
     def main_rotation(self, ctx: Context) -> tuple[str, float, str]:
-
-        print(f"当前时间: {datetime.now().strftime('%H:%M:%S')}, 旋转: {self.name}")
-
+        self.read_config(ctx)
+        party_members = self.calculate_party_health_score(ctx)
         spell_queue_window = float(ctx.spell_queue_window or 0.3)
 
-        # if not ctx.enable:
-        #     return self.idle("总开关未开启")
+        if not ctx.enable:
+            print("总开关未开启")
+            return self.idle("总开关未开启")
 
-        # if ctx.delay:
-        #     return self.idle("延迟开关开启")
+        if ctx.delay:
+            print("延迟开关开启")
+            return self.idle("延迟开关开启")
 
-        # spell_queue_window = float(ctx.spell_queue_window or 0.3)
-        # player = ctx.player
-        # target = ctx.target
-        # focus = ctx.focus
-        # mouseover = ctx.mouseover
+        player = [member for member in party_members if member.unitToken == "player"][0]
+        # for member in party_members:
+        #     if (len(member.buff_list) > 0) and (member.unitToken != "player"):
+        #         print(f"{member.unitToken}的buff列表: {member.buff_list}", end="; ")
 
-        # # AOE敌人数量 min: 2 max: 10 default: 4 step: 1
-        # # 设置判定为AOE条件的敌人数量
-        # guardian_aoe_enemy_count_cell = ctx.setting.cell(0)
-        # if guardian_aoe_enemy_count_cell is None:
-        #     aoe_enemy_count = 4  # 默认值，10级别
-        # else:
-        #     aoe_enemy_count = round(guardian_aoe_enemy_count_cell.mean/10)
+        # print(f"{player.powerPercent=}", end="; ")
+        # print(f"{player.powerPercent=}")
+        # print(f"{player.unitToken=}", end="; ")
+        # print(f"{player.health_score=}", end="; ")
+        # print(f"{player.health_deficit=}", end="; ")
+        # print(f"{player.health_base=}", end="; ")
+        # print(f"{player.rejuvenation_remaining=}", end="; ")
+        # print(f"{player.rejuvenation_count=}", end="; ")
 
-        # # 起手时间判定 min: 5 max: 45 default: 10 step: 5
-        # # 即脱离战斗后多长时间内再次进入战斗时认为是起手阶段
-        # guardian_opener_time_cell = ctx.setting.cell(1)
-        # if guardian_opener_time_cell is None:
-        #     opener_time = 10.0  # 默认值，5秒
-        # else:
-        #     opener_time = float(guardian_opener_time_cell.mean)
+        if not player.alive:
+            return self.idle("玩家已死亡")
 
-        # # 狂暴回复阈值 min: 30 max: 70 default: 50 step: 2
-        # # 当玩家生命值低于该值时优先使用狂暴回复
-        # guardian_frenzied_regeneration_threshold_cell = ctx.setting.cell(2)
-        # if guardian_frenzied_regeneration_threshold_cell is None:
-        #     frenzied_regeneration_threshold = 50.0  # 默认值，50%
-        # else:
-        #     frenzied_regeneration_threshold = float(guardian_frenzied_regeneration_threshold_cell.mean)
+        if player.isChatInputActive:
+            return self.idle("正在聊天输入")
 
-        # # 树皮阈值 min: 20 max: 60 default: 40 step: 2
-        # # 当玩家生命值低于该值时优先使用树皮术
-        # guardian_barkskin_threshold_cell = ctx.setting.cell(3)
-        # if guardian_barkskin_threshold_cell is None:
-        #     barkskin_threshold = 40.0  # 默认值，40%
-        # else:
-        #     barkskin_threshold = float(guardian_barkskin_threshold_cell.mean)
+        if player.isMounted:
+            return self.idle("骑乘中")
 
-        # # 生存本能阈值 min: 10 max: 50 default: 30 step: 2
-        # # 当玩家生命值低于该值时优先使用生存本能
-        # guardian_survival_instincts_threshold_cell = ctx.setting.cell(4)
-        # if guardian_survival_instincts_threshold_cell is None:
-        #     survival_instincts_threshold = 30.0  # 默认值，30%
-        # else:
-        #     survival_instincts_threshold = float(guardian_survival_instincts_threshold_cell.mean)
+        if player.castIcon is not None:
+            return self.idle("正在施法")
 
-        # # 怒气溢出阈值 min: 60 max: 120 default: 100 step: 5
-        # # 高于该怒气时，不再使用攒怒技能。
-        # guardian_rage_overflow_threshold_cell = ctx.setting.cell(5)
-        # if guardian_rage_overflow_threshold_cell is None:
-        #     rage_overflow_threshold = 100.0  # 默认值，100
-        # else:
-        #     rage_overflow_threshold = float(guardian_rage_overflow_threshold_cell.mean)
+        if player.channelIcon is not None:
+            return self.idle("正在引导")
 
-        # # 重殴怒气下限 min: 90 max: 130 default: 120 step: 5
-        # # 当玩家怒气高于该值时，才会使用重殴泄怒
-        # guardian_rage_threshold_cell = ctx.setting.cell(6)
-        # if guardian_rage_threshold_cell is None:
-        #     rage_threshold = 120.0  # 默认值，120
-        # else:
-        #     rage_threshold = float(guardian_rage_threshold_cell.mean)
+        if player.isEmpowering:
+            return self.idle("正在蓄力")
 
-        # # 打断逻辑  blacklist = 使用黑名单 all = 任意打断, default: blacklist
-        # guardian_interrupt_logic_cell = ctx.setting.cell(7)
-        # if guardian_interrupt_logic_cell is None:
-        #     interrupt_logic = "blacklist"  # 默认值，使用黑名单
-        # else:
-        #     interrupt_logic = "blacklist" if guardian_interrupt_logic_cell.mean >= 200 else "any"
-        # interrupt_blacklist = ctx.interrupt_blacklist
+        if player.hasBuff("食物和饮料"):
+            return self.idle("正在吃喝")
 
-        # # 化身逻辑  manual=手动 burst_mode=爆发模式 combat_mode = 战斗时间模式 default:burst_mode
-        # guardian_incarnation_logic_cell = ctx.setting.cell(8)
-        # if guardian_incarnation_logic_cell is None:
-        #     incarnation_logic = "burst_mode"  # 默认值，爆发模式
-        # else:
-        #     if guardian_incarnation_logic_cell.mean > 200:
-        #         incarnation_logic = "manual"
-        #     elif guardian_incarnation_logic_cell.mean > 100:
-        #         incarnation_logic = "burst_mode"
-        #     else:
-        #         incarnation_logic = "combat_mode"
+        if not player.isInCombat:
+            return self.idle("未进入战斗")
 
-        # # 铁鬃逻辑  one = 保持1层 two = 保持2层 more = 无线堆叠 default: two
-        # # 会在铁宗持续时间过低时间使用铁宗。
-        # # 保持1层时，实际铁鬃覆盖1-2层。
-        # # 保持2层时，实际铁鬃覆盖1-3层。
-        # # 无限堆叠，除了保留狂暴恢复德怒气外，全部打铁鬃。
-        # guardian_ironfur_logic_cell = ctx.setting.cell(9)
-        # if guardian_ironfur_logic_cell is None:
-        #     ironfur_logic = "two"  # 默认值，保持2层
-        # else:
-        #     if guardian_ironfur_logic_cell.mean > 200:
-        #         ironfur_logic = "one"
-        #     elif guardian_ironfur_logic_cell.mean > 100:
-        #         ironfur_logic = "two"
-        #     else:
-        #         ironfur_logic = "more"
-
-        # # 怒气上限
-        # guardian_rage_limit_cell = ctx.setting.cell(10)
-        # if guardian_rage_limit_cell is None:
-        #     rage_limit = 120.0  # 默认值，120
-        # else:
-        #     rage_limit = float(guardian_rage_limit_cell.mean)
-        # # print(f"{interrupt_logic=} {incarnation_logic=} {ironfur_logic=} {rage_limit=}")
-
-        # if not player.alive:
-        #     return self.idle("玩家已死亡")
-
-        # if player.isChatInputActive:
-        #     return self.idle("正在聊天输入")
-
-        # if player.isMounted:
-        #     return self.idle("骑乘中")
-
-        # if player.castIcon is not None:
-        #     return self.idle("正在施法")
-
-        # if player.channelIcon is not None:
-        #     return self.idle("正在引导")
-
-        # if player.isEmpowering:
-        #     return self.idle("正在蓄力")
-
-        # if player.hasBuff("食物和饮料"):
-        #     return self.idle("正在吃喝")
-
-        # if not player.isInCombat:
-        #     return self.idle("未进入战斗")
-
-        # if player.hasBuff("旅行形态"):
-        #     return self.idle("旅行形态中")
+        if player.hasBuff("旅行形态"):
+            return self.idle("旅行形态中")
 
         # if not player.hasBuff("熊形态"):
         #     return self.cast("any熊形态")
 
-        # main_target = None
-        # if focus.exists and focus.canAttack and focus.isInMeleeRange:
-        #     main_target = focus
-        # elif target.exists and target.canAttack and target.isInMeleeRange:
-        #     main_target = target
+        # 队伍平均血量基线，用于判断群体治疗技能是否值得交。
+        party_health_base_avg = sum(member.health_base for member in party_members) / len(party_members)
+        # 当前血量基线最低的单位，很多保命和单抬逻辑都以它为目标。
+        lowest_health_base_member = min(party_members, key=lambda member: member.health_base)
+        # 非坦克队友
+        non_tank_party_members = [member for member in party_members if (member.unitRole != "TANK")]
+        non_tank_lowest_health_base_member = min(non_tank_party_members, key=lambda member: member.health_base)
+        # 丰饶层数供迅捷治愈逻辑使用。
+        abundance_stack = player.buffStack("丰饶")
+        # print(f"队伍平均治疗基线: {party_health_base_avg:.2f}, 最低血量的队员: {lowest_health_base_member.unitToken}({lowest_health_base_member.health_base:.2f}), 丰饶层数: {abundance_stack}")
 
-        # # 如果没有主目标，当前目标也不再远程范围，也不可以攻击，那么就什么都做不了。
-        # if main_target is None:
-        #     if target.exists and target.canAttack and target.isInRangedRange:
-        #         pass
-        #     else:
-        #         # print("当前目标不可攻击或不在远程范围，且焦点也不可攻击或不在近战范围，无法使用技能")
-        #         return self.idle("没有合适的目标")
+        # print(f"{in_cat_form=}", end="; ")
+        player_in_movement = player.isMoving
+        player_is_stand = not player_in_movement
+        # print(f"{player.unitToken}的状态: {'移动中' if player_in_movement else '站立不动'}", end="; ")
+        tank_members = [member for member in party_members if member.unitRole == "TANK"]
+        if tank_members:
+            tank_member = tank_members[0]
+        else:
+            tank_member = None
+        # print(f"{tank_member.unitToken if tank_member else '没有坦克'}的血量基线: {tank_member.health_score if tank_member else 'N/A'}", end="; ")
 
-        # rage = float(player.powerPercent) * rage_limit / 100.0
-        # # print(f"main_target: {main_target.unitToken if main_target else None}, rage: {rage:.1f}")
-        # is_opener = float(ctx.combat_time) <= opener_time
-        # is_aoe = int(player.enemyCount) >= aoe_enemy_count
-        # enemy_in_range = int(player.enemyCount) >= 1
-        # player_is_stand = not player.isMoving
+        # 0.1 铁木树皮逻辑（优先保最低血线目标）
+        # 铁木树皮冷却完成时，检查当前血量基线最低的队友是否低于铁木树皮阈值。
+        # 如果满足条件，就对这个最低血量基线目标施放铁木树皮。
+        # 铁木树皮不对坦克释放。
+        if ctx.spell_cooldown_ready("铁木树皮", spell_queue_window, ignore_gcd=True):
+            # print("铁木树皮冷却好了", end="; ")
+            # print(lowest_health_base_member.unitToken, end="; ")
+            # print(f"血量基线: {lowest_health_base_member.health_base}", end="; ")
+            if non_tank_lowest_health_base_member.health_base < self.ironbark_hp_threshold:
+                return self.cast(f"{non_tank_lowest_health_base_member.unitToken}铁木树皮")
+                # print(f"对{non_tank_lowest_health_base_member.unitToken}施放铁木树皮", end="; ")
 
-        # # 开怪使用赤红之月
-        # if ctx.spell_cooldown_ready("赤红之月", spell_queue_window) and (main_target is not None):
-        #     if is_opener:
-        #         return self.cast(f"{main_target.unitToken}赤红之月")
+        # 0.2 树皮术逻辑（自己保命）
+        # 树皮术冷却完成时，检查玩家自己的血量基线是否低于树皮术阈值。
+        # 如果满足条件，就对自己施放树皮术。
+        if ctx.spell_cooldown_ready("树皮术", spell_queue_window, ignore_gcd=True):
+            # print("树皮术冷却好了", end="; ")
+            # print(f"血量基线: {player.health_base}", end="; ")
+            if player.health_base < self.barkskin_hp_threshold:
+                return self.cast("树皮术")
+                # print("对自己施放树皮术", end="; ")
 
-        # # 开怪优先补月火
-        # if ctx.spell_cooldown_ready("月火术", spell_queue_window) and (main_target is not None):
-        #     if not main_target.hasDebuff("月火术"):
-        #         if is_opener:
-        #             return self.cast(f"{main_target.unitToken}月火术")
+        # 0.3 自然之愈逻辑（优先驱散可驱散 debuff）
+        # 自然之愈可用时，顺序检查队伍成员身上是否存在可驱散且不在黑名单里的 debuff。
+        # 找到符合条件的成员后，就对该成员施放自然之愈。
+        if ctx.spell_cooldown_ready("自然之愈", spell_queue_window):
+            for member in party_members:
+                if member.can_dispel:
+                    return self.cast(f"{member.unitToken}自然之愈")
+                    # print(f"对{member.unitToken}施放自然之愈驱散", end="; ")
 
-        # # 低于 狂暴回复阈值且有怒气时优先使用狂暴回复
-        # if (rage > 10) and ctx.spell_charges_ready("狂暴回复", 1, spell_queue_window):
-        #     if (player.healthPercent < frenzied_regeneration_threshold):
-        #         if not player.hasBuff("狂暴回复"):
-        #             return self.cast("狂暴回复")
+        # 1.1 生命绽放逻辑（优先维持坦克常驻 HoT）
+        # 有坦克且生命绽放可用时，检查坦克身上的生命绽放剩余时间是否低于 3.5 秒。
+        # 如果满足条件，就给坦克补生命绽放。
+        if (tank_member is not None) and ctx.spell_cooldown_ready("生命绽放", spell_queue_window):
+            if tank_member.buffRemain("生命绽放") < 3.5:
+                return self.cast(f"{tank_member.unitToken}生命绽放")
+                # print(f"对{tank_member.unitToken}施放生命绽放", end="; ")
 
-        # # 低于树皮术阈值时优先使用树皮术
-        # # 树皮术不受公共CD限制，所以即使在公共CD内也可以使用，除非设置了忽略公共CD。
-        # # 不和生存本能叠加，所以当生存本能未准备好时才使用树皮术。
-        # if ctx.spell_cooldown_ready("树皮术", spell_queue_window, ignore_gcd=True):
-        #     if (player.healthPercent < barkskin_threshold):
-        #         if not player.hasBuff("树皮术"):
-        #             if not player.hasBuff("生存本能"):
-        #                 return self.cast("树皮术")
+        # 1.2 共生关系逻辑（优先补坦克常驻 buff）
+        # 有坦克且共生关系可用时，检查坦克身上是否还没有共生关系。
+        # 如果满足条件，就给坦克补共生关系。
+        if (tank_member is not None) and ctx.spell_cooldown_ready("共生关系", spell_queue_window):
+            if not tank_member.hasBuff("共生关系"):
+                return self.cast(f"{tank_member.unitToken}共生关系")
+                # print(f"对{tank_member.unitToken}施放共生关系", end="; ")
 
-        # # 低于生存本能阈值时优先使用生存本能
-        # if ctx.spell_charges_ready("生存本能", 1, spell_queue_window):
-        #     if (player.healthPercent < survival_instincts_threshold):
-        #         if not player.hasBuff("生存本能"):
-        #             return self.cast("player生存本能")
+        # 1.3 万灵之召逻辑（队血危险或单体濒危时开爆发）
+        # 万灵之召可用时，检查队伍平均血量基线是否低于队血阈值，或最低血量基线是否低于单体阈值。
+        # 只要两种条件任意一种满足，就施放万灵之召。
+        if ctx.spell_cooldown_ready("万灵之召", spell_queue_window):
+            if (party_health_base_avg <= self.convoke_party_hp_threshold):
+                return self.cast("万灵之召")
+                # print("施放万灵之召", end="; ")
 
-        # if ctx.spell_cooldown_ready("铁鬃", spell_queue_window, ignore_gcd=True) and (rage > 41):
-        #     if (not player.hasBuff("铁鬃")) or (player.buffRemain("铁鬃") < 3):
-        #         return self.cast("低保铁鬃")
+            if (non_tank_lowest_health_base_member.health_base <= self.convoke_single_hp_threshold):
+                return self.cast("万灵之召")
+                # print("施放万灵之召", end="; ")
 
-        #     if ironfur_logic == "two":
-        #         if player.buffStack("铁鬃") < 2:
-        #             return self.cast("低保铁鬃")
+        # 1.4 野性成长逻辑（满足人数后补群 HoT）
+        # 玩家站定且野性成长可用时，统计血量基线低于野性成长阈值的人数是否达到设定人数。
+        # 如果满足条件，就把野性成长打给当前血量基线最低的单位。
+        if ctx.spell_cooldown_ready("野性成长", spell_queue_window) and player_is_stand:
+            wild_growth_targets = [member for member in party_members if member.health_base < self.wild_growth_hp_threshold]
+            if len(wild_growth_targets) >= self.wild_growth_count_threshold:
+                return self.cast(f"{lowest_health_base_member.unitToken}野性成长")
+                # print(f"对{lowest_health_base_member.unitToken}施放野性成长", end="; ")
 
-        # if ctx.spell_cooldown_ready("铁鬃", spell_queue_window, ignore_gcd=True) and (rage > 51):
-        #     if ironfur_logic == "more":
-        #         return self.cast("低保铁鬃")
+        # 1.5 宁静逻辑（大掉血时补强力群疗）
+        # 玩家站定且宁静可用时，检查队伍平均血量基线是否低于宁静阈值。
+        # 如果满足条件，就直接施放宁静。
+        if ctx.spell_cooldown_ready("宁静", spell_queue_window) and player_is_stand:
+            if party_health_base_avg <= self.tranquility_party_hp_threshold:
+                return self.cast("宁静")
+                # print("施放宁静", end="; ")
 
-        # # 开怪阶段，优先使用痛击。
-        # if ctx.spell_cooldown_ready("痛击", spell_queue_window):
-        #     if is_opener:
-        #         if enemy_in_range:
-        #             return self.cast("开怪痛击")
-        # # 化身的爆发逻辑
-        # if ctx.spell_cooldown_ready("化身", spell_queue_window, ignore_gcd=True) or ctx.spell_cooldown_ready("狂暴", spell_queue_window):
-        #     if incarnation_logic == "manual":
-        #         pass
-        #     elif incarnation_logic == "burst_mode":
-        #         if ctx.burst_time > 0:
-        #             return self.cast("化身")
-        #     elif incarnation_logic == "combat_mode":
-        #         if is_opener:
-        #             return self.cast("化身")
+        # 1.6 自然迅捷逻辑（最低血线危险时预备瞬发）
+        # 自然迅捷可用时，检查当前血量基线最低的单位是否低于自然迅捷阈值。
+        # 如果满足条件，就先施放自然迅捷。
+        # 针对非坦克玩家
+        if ctx.spell_cooldown_ready("自然迅捷", spell_queue_window, ignore_gcd=True):
+            if non_tank_lowest_health_base_member.health_base < self.nature_swiftness_hp_threshold:
+                return self.cast("自然迅捷")
+                # print("施放自然迅捷", end="; ")
 
-        # # 打断逻辑
-        # target_need_interrupt = False
-        # focus_need_interrupt = False
-        # if focus.exists and focus.canAttack and focus.isInMeleeRange:
-        #     if (focus.anyCastIcon is not None) and focus.anyCastIsInterruptible:
-        #         # print(focus.anyCastIcon)
-        #         if interrupt_logic == "any":
-        #             focus_need_interrupt = True
-        #         elif interrupt_logic == "blacklist":
-        #             # 黑名单模式下，只有当施法名称不在黑名单中时才打断
-        #             if not (focus.anyCastIcon in interrupt_blacklist):
-        #                 focus_need_interrupt = True
+        # 1.7 迅捷治愈逻辑
+        # 统计迅捷治愈的人数：血量低于阈值，且身上有2层hot。
+        # 如果满足人数条件，就施放迅捷治愈。
+        if ctx.spell_cooldown_ready("迅捷治愈", spell_queue_window):
+            swiftmend_targets = [member for member in party_members if (member.health_base < self.swiftmend_hp_threshold) and (member.hot_count > 1)]
+            if (len(swiftmend_targets) >= self.swiftmend_count_threshold):
+                return self.cast("迅捷治愈")
+                # print("施放迅捷治愈", end="; ")
 
-        # if target.exists and target.canAttack and target.isInMeleeRange:
-        #     # if target.castIcon:
-        #     #     if target.castIsInterruptible:
-        #     #         print("当前目标在施法,当前目标施法可以打断")
-        #     if (target.anyCastIcon is not None) and target.anyCastIsInterruptible:
-        #         # print("a")
-        #         if interrupt_logic == "any":
-        #             target_need_interrupt = True
-        #         elif interrupt_logic == "blacklist":
-        #             # 黑名单模式下，只有当施法名称不在黑名单中时才打断
-        #             if not (target.anyCastIcon in interrupt_blacklist):
-        #                 target_need_interrupt = True
+        # 1.8 愈合逻辑（优先单抬已有 HoT 的低血目标）
+        # 愈合可用时，检查最低血量基线目标是否低于愈合阈值，并且身上至少已有一个 HoT。
+        # 如果满足条件，就对这个最低血量基线目标施放愈合。
+        if ctx.spell_cooldown_ready("愈合", spell_queue_window) and player_is_stand:
+            if (lowest_health_base_member.health_base < self.regrowth_hp_threshold) and (lowest_health_base_member.hot_count > 0):
+                return self.cast(f"{lowest_health_base_member.unitToken}愈合")
+                # print(f"对{lowest_health_base_member.unitToken}施放愈合", end="; ")
 
-        # if ctx.spell_cooldown_ready("迎头痛击", spell_queue_window, ignore_gcd=True):
-        #     if focus_need_interrupt:
-        #         return self.cast("focus迎头痛击")
-        #     elif target_need_interrupt:
-        #         return self.cast("target迎头痛击")
+        # 1.9 回春术逻辑（优先补 0 层回春）
+        # 回春术可用时，筛选回春数量为 0 且血量基线低于回春阈值的队友。
+        # 在这些目标里，选择 health_score 最低的单位施放回春术。
+        if ctx.spell_cooldown_ready("回春术", spell_queue_window):
+            rejuvenation_targets = [member for member in party_members if (member.rejuvenation_count == 0) and (member.health_base < self.rejuvenation_hp_threshold)]
+            if rejuvenation_targets:
+                target = min(rejuvenation_targets, key=lambda member: member.health_score)
+                return self.cast(f"{target.unitToken}回春术")
+                # print(f"对{target.unitToken}施放回春术", end="; ")
 
-        # # 开怪阶段优先使用明月普照
-        # # 玩家站定才用
-        # if ctx.spell_cooldown_ready("明月普照", spell_queue_window) and (main_target is not None):
-        #     if is_opener and player_is_stand:
-        #         return self.cast(f"{main_target.unitToken}明月普照")
+        # 1.10 回春术逻辑（继续补到 2 层回春）
+        # 回春术可用时，筛选回春数量为 1 且血量基线低于回春阈值的队友。
+        # 在这些目标里，选择 health_score 最低的单位继续补第二层回春。
+        if ctx.spell_cooldown_ready("回春术", spell_queue_window):
+            rejuvenation_targets = [member for member in party_members if (member.rejuvenation_count == 1) and (member.health_base < self.rejuvenation_hp_threshold)]
+            if rejuvenation_targets:
+                target = min(rejuvenation_targets, key=lambda member: member.health_score)
+                return self.cast(f"{target.unitToken}回春术")
+                # print(f"对{target.unitToken}施放回春术", end="; ")
 
-        # # 60怒才用毁灭
-        # if ctx.spell_cooldown_ready("毁灭", spell_queue_window):
-        #     if rage > 60:
-        #         return self.cast("毁灭")
+        # 2.1 爆发预铺逻辑（爆发期尽量补满回春层数）
+        # 爆发模式开启且回春术可用时，先给 0 层回春的目标补第一层，再给 1 层回春的目标补第二层。
+        # 每一轮都在候选目标里选择 health_score 最低的单位施放回春术。
+        if ctx.spell_cooldown_ready("回春术", spell_queue_window) and (ctx.burst_time > 0):
+            rejuvenation_targets = [member for member in party_members if (member.rejuvenation_count == 0)]
+            if rejuvenation_targets:
+                target = min(rejuvenation_targets, key=lambda member: member.health_score)
+                return self.cast(f"{target.unitToken}回春术")
+                # print(f"对{target.unitToken}施放回春术", end="; ")
 
-        # # 2层裂伤优先打出去。
-        # if ctx.spell_charges_ready("裂伤", 2, spell_queue_window) and (main_target is not None):
-        #     if rage < rage_overflow_threshold:
-        #         return self.cast("溢出裂伤")
+            rejuvenation_targets = [member for member in party_members if (member.rejuvenation_count == 1)]
+            if rejuvenation_targets:
+                target = min(rejuvenation_targets, key=lambda member: member.health_score)
+                return self.cast(f"{target.unitToken}回春术")
+                # print(f"对{target.unitToken}施放回春术", end="; ")
 
-        # # AOE痛击多大，单体则补痛击
-        # if ctx.spell_cooldown_ready("痛击", spell_queue_window) and (main_target is not None):
-        #     if enemy_in_range:
-        #         if main_target.debuffStack("痛击") < 3 or main_target.debuffRemain("痛击") < 4:
-        #             return self.cast("补痛击")
-        #         if is_aoe:
-        #             return self.cast("AOE痛击")
+        # 3.0 保持瑞吉
+        # 3.1 如果丰饶层数小于阈值，给无回春目标释放回春
+        # 一个玩家最多贡献2个丰饶，在阈值之上需要进一步限制。
+        party_count = len(party_members)  # 队伍人数
+        abundance_stack_threshold_per_unit = self.abundance_stack_threshold / 5  # 当前阈值对应平均每个玩家的丰饶数
+        abundance_stack_limit = party_count * abundance_stack_threshold_per_unit    # 适合当前小队的丰饶层数
+        if ctx.spell_cooldown_ready("回春术", spell_queue_window) and (abundance_stack < abundance_stack_limit):
+            rejuvenation_targets = [member for member in party_members if (member.rejuvenation_count == 0)]
+            if rejuvenation_targets:
+                target = min(rejuvenation_targets, key=lambda member: member.health_score)
+                return self.cast(f"{target.unitToken}回春术")
+                # print(f"对{target.unitToken}施放回春术", end="; ")
 
-        # # 裂伤一层时，没2层优先那么高。
-        # if ctx.spell_charges_ready("裂伤", 1, spell_queue_window):
-        #     if is_aoe:
-        #         if rage <= rage_overflow_threshold:
-        #             return self.cast("补怒裂伤")
-        #     else:
-        #         return self.cast("裂伤")
+            rejuvenation_targets = [member for member in party_members if (member.rejuvenation_count == 1)]
+            if rejuvenation_targets:
+                target = min(rejuvenation_targets, key=lambda member: member.health_score)
+                return self.cast(f"{target.unitToken}回春术")
+                # print(f"对{target.unitToken}施放回春术", end="; ")
 
-        # # 星河守护者时，优先用掉月火。
-        # if ctx.spell_cooldown_ready("月火术", spell_queue_window) and (main_target is not None):
-        #     if player.hasBuff("星河守护者"):
-        #         if not is_aoe:
-        #             return self.cast(f"{main_target.unitToken}月火术")
-        #         if player.buffRemain("星河守护者") < 4:
-        #             return self.cast(f"{main_target.unitToken}月火术")
-        #     # 目标没月火，补
-        #     if not main_target.hasDebuff("月火术"):
-        #         return self.cast(f"{main_target.unitToken}月火术")
+        # 3.2 激活
+        # 蓝低于90，就用了。
+        if ctx.spell_cooldown_ready("激活", spell_queue_window, ignore_gcd=True):
+            if (player.powerPercent < 90):
+                return self.cast(f"激活")
 
-        # # 泄怒
-        # if (rage > rage_threshold):
-        #     if is_aoe:
-        #         if ctx.spell_cooldown_ready("摧折", spell_queue_window):
-        #             return self.cast("enemy摧折")
-        #     elif (main_target is not None):
-        #         if ctx.spell_cooldown_ready("重殴", spell_queue_window):
-        #             return self.cast(f"{main_target.unitToken}重殴")
-        #     elif ctx.spell_cooldown_ready("铁鬃", spell_queue_window, ignore_gcd=True):
-        #         return self.cast("泻怒铁鬃")
+        # 4.0 战斗部分，在治疗之外的填充
 
-        # # 填充
-        # # 优先痛击
-        # if ctx.spell_cooldown_ready("痛击", spell_queue_window) and (main_target is not None):
-        #     if enemy_in_range:
-        #         return self.cast("AOE痛击")
+        target = ctx.target
+        combat_point_cell = ctx.spec.cell(0)  # 连击点
+        in_cat_form = player.hasBuff("猎豹形态")
+        if combat_point_cell is not None:
+            combat_point = combat_point_cell.mean/51
+        else:
+            combat_point = 0
 
-        # if ctx.spell_cooldown_ready("月火术", spell_queue_window) and (main_target is not None):
-        #     if player.hasBuff("星河守护者"):
-        #         return self.cast(f"{main_target.unitToken}月火术")
-        #     return self.cast("填充横扫")
+        # 4.1 近战逻辑（没有合适的治疗目标时就近打怪）
+        # 在猫形态，野性之心能用则野性之心
+        # 连击点数 = 5。释放割裂，目标没有割裂则割裂。
+        # 连击点数 < 5
+        #   - 目标没有斜掠则斜掠
+        #   - 撕碎
+        if target.exists and target.isInMeleeRange and target.canAttack:
+            if in_cat_form and ctx.spell_cooldown_ready("野性之心", spell_queue_window):
+                return self.cast("target野性之心")
+            elif combat_point >= 5 and ctx.spell_cooldown_ready("割裂", spell_queue_window) and (not target.hasDebuff("割裂")):
+                return self.cast("target割裂")
+            elif combat_point < 5 and ctx.spell_cooldown_ready("斜掠", spell_queue_window) and (not target.hasDebuff("斜掠")):
+                return self.cast("target斜掠")
+            elif combat_point < 5 and ctx.spell_cooldown_ready("撕碎", spell_queue_window):
+                return self.cast("target撕碎")
 
+        if target.exists and target.isInRangedRange and (not target.isInMeleeRange) and target.canAttack and target.isInCombat:
+            if ctx.spell_cooldown_ready("月火术", spell_queue_window) and (not target.hasDebuff("月火术")):
+                return self.cast("target月火术")
+            elif ctx.spell_cooldown_ready("愤怒", spell_queue_window):
+                return self.cast("target愤怒")
+
+        # print(f"当前战斗积分: {combat_point:.2f}", end="; ")
+
+        # print(f"当前时间: {datetime.now().strftime('%H:%M:%S')}")
         return self.idle("当前没有合适动作")
