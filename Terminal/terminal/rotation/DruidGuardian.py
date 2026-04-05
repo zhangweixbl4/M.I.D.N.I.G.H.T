@@ -45,6 +45,8 @@ class DruidGuardian(BaseRotation):
             "溢出裂伤": "SHIFT-NUMPAD9",
             "补怒裂伤": "SHIFT-NUMPAD9",
             "毁灭": "SHIFT-NUMPAD0",
+            "target安抚": "SHIFT-F1",
+            "focus安抚": "SHIFT-F2",
         }
 
     def main_rotation(self, ctx: Context) -> tuple[str, float, str]:
@@ -256,6 +258,13 @@ class DruidGuardian(BaseRotation):
         if ctx.spell_cooldown_ready("铁鬃", spell_queue_window, ignore_gcd=True) and (rage > 51):
             if ironfur_logic == "more":
                 return self.cast("低保铁鬃")
+
+        if ctx.spell_cooldown_ready("安抚", spell_queue_window) and (main_target is not None):
+            buff_type_list = [debuff.type for debuff in main_target.debuff]
+            if "ENRAGE" in buff_type_list:
+                return self.cast(f"{main_target.unitToken}安抚")
+            # print(buff_type_list)
+            # print("安抚好了")
 
         # 开怪阶段，优先使用痛击。
         if ctx.spell_cooldown_ready("痛击", spell_queue_window):
