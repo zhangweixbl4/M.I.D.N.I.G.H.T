@@ -7,6 +7,7 @@
 ## LoadSavedVariablesFirst: 1
 ## Category-zhCN: 高级战斗辅助工具
 ## IconTexture: Interface\AddOns\DejaVu\textures\logo.png
+## Category: DéjàVu
 
 # 核心依赖库
 libs\load_libs.xml
