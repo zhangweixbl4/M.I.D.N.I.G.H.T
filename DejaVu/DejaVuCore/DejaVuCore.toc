@@ -1,0 +1,13 @@
+## Interface: 120001
+## Title: DéjàVu Core
+## Author: Émile Boirac
+## Version: 12.0.1.66709
+## SavedVariables: DejaVuCoreSave
+## LoadSavedVariablesFirst: 1
+## Category: DéjàVu
+## IconTexture: Interface\Icons\Ability_Domination_Rune13
+
+Base.lua
+Profile.lua
+Config.lua
+Color.lua

@@ -1,0 +1,16 @@
+## Interface: 120001
+## Title: DéjàVu Matrix
+## Author: Émile Boirac
+## Version: 12.0.1.66709
+## Dependencies: DejaVuCore
+## LoadWith: DejaVuCore
+## Category: DéjàVu
+## IconTexture: Interface\Icons\Ability_Domination_Rune01
+
+DejaVu_Matrix.lua
+DejaVu_Cell.lua
+DejaVu_MegaCell.lua
+DejaVu_BadgeCell.lua
+DejaVu_CharCell.lua
+
+# _Test.lua
