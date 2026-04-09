@@ -43,8 +43,8 @@ debuffOnFriendlyCurve:AddPoint(11, COLOR.SPELL_TYPE.BLEED)
 local function InitCells(maxAuraCount, baseX, baseY)
     local cells = {}
     for i = 1, maxAuraCount do
-        local x = baseX - 2 + 2 * i                 -- 计算当前槽位 x 坐标
-        local y = baseY                             -- 当前槽位 y 坐标
+        local x = baseX - 2 + 2 * i                  -- 计算当前槽位 x 坐标
+        local y = baseY                              -- 当前槽位 y 坐标
         local iconCell = BadgeCell:New(x, y)         -- aura 图标
         local remainingCell = Cell:New(x, y + 2)     -- 剩余时间颜色
         local spellTypeCell = Cell:New(x + 1, y + 2) -- aura 类型颜色
@@ -226,14 +226,20 @@ local function CreateAuraController(options)
             return
         end
         local cell = cells[index]
-        local remaining = GetAuraDuration(unitKey, instanceID)                  -- 剩余时间对象
+        local remaining = GetAuraDuration(unitKey, instanceID) -- 剩余时间对象
+        if remaining then
+            cell.remaining:setCell(
+                EvaluateColorFromBoolean(
+                    DoesAuraHaveExpirationTime(unitKey, instanceID),
+                    remaining:EvaluateRemainingDuration(remainingCurve),
+                    COLOR.WHITE
+                ))
+        else
+            cell.remaining:setCell(COLOR.WHITE)
+        end
+
+
         local count = GetAuraApplicationDisplayCount(unitKey, instanceID, 1, 9) -- 取层数字符串
-        cell.remaining:setCell(
-            EvaluateColorFromBoolean(
-                DoesAuraHaveExpirationTime(unitKey, instanceID),
-                remaining:EvaluateRemainingDuration(remainingCurve),
-                COLOR.WHITE
-            ))
         cell.count:setCell(count)
     end
 
