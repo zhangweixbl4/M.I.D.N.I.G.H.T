@@ -165,7 +165,7 @@ After(2, function()
         end
     end
 
-    local function updateCell(instanceID)
+    local function updateRemaining(instanceID)
         local index = InstanceIDMap[instanceID]
         if index == nil then
             return
@@ -182,9 +182,9 @@ After(2, function()
         cell.count:setCell(count)
     end
 
-    local function updateAll()
+    local function updateRemainingAll()
         for instanceID in pairs(InstanceIDMap) do
-            updateCell(instanceID)
+            updateRemaining(instanceID)
         end
     end
 
@@ -199,16 +199,16 @@ After(2, function()
     eventFrame:HookScript("OnUpdate", function(self, elapsed)
         fastTimeElapsed = fastTimeElapsed + elapsed
         if fastTimeElapsed > 0.2 then
-            fastTimeElapsed = 0
-            updateAll()
+            fastTimeElapsed = fastTimeElapsed - 0.2
+            updateRemainingAll()
         end
         lowTimeElapsed = lowTimeElapsed + elapsed
         if lowTimeElapsed > 0.5 then
-            lowTimeElapsed = 0
+            lowTimeElapsed = lowTimeElapsed - 0.5
         end
         superLowTimeElapsed = superLowTimeElapsed + elapsed
         if superLowTimeElapsed > 2 then
-            superLowTimeElapsed = 0
+            superLowTimeElapsed = superLowTimeElapsed - 2
             refreshAll()
         end
     end)
@@ -230,7 +230,7 @@ After(2, function()
         end
         if info.updatedAuraInstanceIDs then
             for _, instanceID in ipairs(info.updatedAuraInstanceIDs) do
-                updateCell(instanceID)
+                updateRemaining(instanceID)
             end
         end
     end
