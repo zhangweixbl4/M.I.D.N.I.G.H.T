@@ -1,5 +1,5 @@
 -- 插件入口
-local addonName, DejaVu_Core = ... -- luacheck: ignore addonName
+local addonName, DejaVu_Core = ...
 
 -- Lua 原生函数
 local insert = table.insert

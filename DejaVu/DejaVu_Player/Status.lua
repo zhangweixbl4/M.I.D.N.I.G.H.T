@@ -1,4 +1,4 @@
-local addonName, addonTable = ... -- luacheck: ignore addonName -- 插件入口固定写法
+local addonName, addonTable = ... -- 插件入口固定写法
 
 -- Lua 原生函数
 local ipairs = ipairs
@@ -45,7 +45,7 @@ local function itemUsable(itemId)
         return false
     end
 
-    local startTime, duration, enable = GetItemCooldown(itemId) -- luacheck: ignore startTime
+    local startTime, duration, enable = GetItemCooldown(itemId)
     local usable, noMana = IsUsableItem(itemId)
     return enable == 1 and duration == 0 and usable and not noMana
 end

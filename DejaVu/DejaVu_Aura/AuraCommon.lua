@@ -1,5 +1,4 @@
--- luacheck: globals C_UnitAuras
-local addonName, addonTable = ... -- luacheck: ignore addonName -- 插件入口固定写法
+local addonName, addonTable = ... -- 插件入口固定写法
 
 -- Lua 原生函数
 local wipe = wipe

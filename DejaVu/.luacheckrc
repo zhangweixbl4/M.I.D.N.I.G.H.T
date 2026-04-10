@@ -7,30 +7,68 @@ max_line_length = 360
 
 read_globals = {
     "C_CurveUtil",
+    "C_Container",
+    "C_Item",
     "C_Spell",
+    "C_SpellActivationOverlay",
     "C_SpellBook",
     "C_Timer",
+    "C_UnitAuras",
     "CreateColor",
     "CreateFrame",
     "Enum",
     "GameFontHighlight",
     "GameTooltip",
+    "GetCurrentKeyBoardFocus",
+    "GetInventoryItemID",
     "GetPhysicalScreenSize",
     "GetScreenHeight",
+    "GetTime",
+    "GetUnitSpeed",
+    "IsInGroup",
+    "IsInRaid",
+    "IsMounted",
     "issecretvalue",
     "SetCVar",
+    "SpellIsTargeting",
     "UIParent",
+    "UnitAffectingCombat",
+    "UnitCastingDuration",
+    "UnitCastingInfo",
     "UnitCanAttack",
+    "UnitChannelDuration",
+    "UnitChannelInfo",
+    "UnitClass",
+    "UnitEmpoweredStageDurations",
     "UnitExists",
+    "UnitGroupRolesAssigned",
+    "UnitGetTotalAbsorbs",
+    "UnitGetTotalHealAbsorbs",
+    "UnitHealthPercent",
+    "UnitHealthMax",
+    "UnitInVehicle",
+    "UnitIsDeadOrGhost",
+    "UnitIsEnemy",
+    "UnitIsUnit",
+    "UnitPowerPercent",
+    "UnitPowerType",
     "wipe",
 }
 
 globals = {
     "DejaVuSave",
+    "DejaVu_CoreSave",
     "SlashCmdList",
 }
 
 ignore = {
-    "211/addonName",
-    "211/addonTable",
+    "211",
+    "212",
+    "213",
+}
+
+files["DejaVu_Panel/DejaVu_Panel.lua"] = {
+    ignore = {
+        "311/COLOR",
+    }
 }

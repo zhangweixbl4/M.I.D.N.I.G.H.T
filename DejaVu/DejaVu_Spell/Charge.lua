@@ -1,5 +1,4 @@
--- luacheck: globals C_SpellActivationOverlay
-local addonName, addonTable = ... -- luacheck: ignore addonName
+local addonName, addonTable = ...
 
 local Enum = Enum
 local After = C_Timer.After

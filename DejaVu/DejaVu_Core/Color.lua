@@ -8,7 +8,7 @@
   draft
 ]]
 -- 插件入口
-local addonName, DejaVu_Core = ... -- luacheck: ignore addonName
+local addonName, DejaVu_Core = ...
 
 -- WoW 官方 API
 local CreateColor = CreateColor

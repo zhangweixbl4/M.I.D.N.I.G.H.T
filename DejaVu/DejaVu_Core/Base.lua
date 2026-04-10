@@ -1,4 +1,4 @@
-local addonName, DejaVu_Core = ... -- luacheck: ignore addonName
+local addonName, DejaVu_Core = ...
 
 local GetTime = GetTime
 local max = math.max
@@ -47,7 +47,7 @@ DejaVu_Core.BurstRemaining = function()
 end
 
 -- SLASH_BURST1 = "/burst"
--- SlashCmdList["BURST"] = function(msg) -- -- luacheck: ignore addonName
+-- SlashCmdList["BURST"] = function(msg)
 --     local delaySeconds = tonumber(msg)
 --     if delaySeconds then
 --         DejaVu_Core.BurstTime = GetTime() + delaySeconds
