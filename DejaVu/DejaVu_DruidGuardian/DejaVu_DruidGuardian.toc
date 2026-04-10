@@ -1,11 +1,11 @@
 ## Interface: 120001
-## Title: DéjàVu Druid Restoration
+## Title: DéjàVu 守护德鲁伊
 ## Author: Émile Boirac
 ## Version: 12.0.1.66709
 ## Dependencies: DejaVu_Spell
 ## LoadWith: DejaVu_Spell
 ## Category: DéjàVu Class
-## IconTexture: Interface\Icons\SPELL_NATURE_HEALINGTOUCH
+## IconTexture: Interface\Icons\Spell_Druid_stamedingroar
 
 
 

@@ -56,9 +56,6 @@ After(2, function()
     end)
 
     function eventFrame:UNIT_AURA(unitToken, info)
-        if self == nil or unitToken ~= UNIT_KEY then
-            return
-        end
         if info.isFullUpdate then
             controller.refreshAll()
             return
@@ -81,16 +78,10 @@ After(2, function()
     end
 
     function eventFrame:PLAYER_TARGET_CHANGED()
-        if self == nil then
-            return
-        end
         controller.refreshAll()
     end
 
     function eventFrame:UNIT_FLAGS(unitToken)
-        if self == nil or unitToken ~= UNIT_KEY then
-            return
-        end
         controller.refreshAll()
     end
 

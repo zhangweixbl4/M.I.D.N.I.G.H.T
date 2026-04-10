@@ -43,20 +43,10 @@ zeroToOneCurve:SetType(Enum.LuaCurveType.Linear)
 zeroToOneCurve:AddPoint(0.0, CreateColor(0, 0, 0, 1))
 zeroToOneCurve:AddPoint(1.0, CreateColor(1, 1, 1, 1))
 
-local cell = {} -- 状态单元格，提供给外部调用以更新状态显示
-local touch = { -- 触发器，提供给外部调用以触发状态更新
-    hasUnitExistsUpdateOnFrame = false,       -- 本帧是否已经处理过单位存在状态更新
-    hasClassAndRoleUpdateOnFrame = false,     -- 本帧是否已经处理过职业和角色更新
-    hasHealthUpdateOnFrame = false,           -- 本帧是否已经处理过血量更新
-    hasPowerUpdateOnFrame = false,            -- 本帧是否已经处理过能量更新
-    hasCastOrChannelUpdateOnFrame = false,    -- 本帧是否已经处理过施法或通道更新
-    hasRangeStatusUpdateOnFrame = false,      -- 本帧是否已经处理过距离更新
-    hasUnitBasicStatusUpdateOnFrame = false,  -- 本帧是否已经处理过基础状态更新
-}
-
-local UNIT_KEY = "target" -- 目标单位
-local posX = 55           -- 起始 x 坐标
-local posY = 10           -- 起始 y 坐标
+local cell = {}                             -- 状态单元格，提供给外部调用以更新状态显示
+local UNIT_KEY = "target"                   -- 目标单位
+local posX = 55                             -- 起始 x 坐标
+local posY = 10                             -- 起始 y 坐标
 
 After(2, function()                         -- 延迟加载
     local eventFrame = CreateFrame("Frame") -- 事件框架
@@ -110,10 +100,6 @@ After(2, function()                         -- 延迟加载
     -- 基于 PLAYER_TARGET_CHANGED 事件
     -- 低频刷新补正
     local function updateUnitExists()
-        if touch.hasUnitExistsUpdateOnFrame then
-            return
-        end
-        touch.hasUnitExistsUpdateOnFrame = true
         unitExists = UnitExists(UNIT_KEY)
 
         if not unitExists then
@@ -135,26 +121,18 @@ After(2, function()                         -- 延迟加载
     -- 更新职业和角色
     -- 低频刷新
     local function updateClassAndRole()
-        if touch.hasClassAndRoleUpdateOnFrame then
-            return
-        end
-        touch.hasClassAndRoleUpdateOnFrame = true
         if not unitExists then
             return
         end
 
-        cell.unitClass:setCell(COLOR.CLASS[select(2, UnitClass(UNIT_KEY))])                           -- 单位职业
-        cell.unitRole:setCell(COLOR.ROLE[UnitGroupRolesAssigned(UNIT_KEY)] or COLOR.ROLE.NONE)        -- 单位角色
+        cell.unitClass:setCell(COLOR.CLASS[select(2, UnitClass(UNIT_KEY))])                    -- 单位职业
+        cell.unitRole:setCell(COLOR.ROLE[UnitGroupRolesAssigned(UNIT_KEY)] or COLOR.ROLE.NONE) -- 单位角色
     end
 
     -- 更新血量数据
     -- 基于 UNIT_HEALTH 和 UNIT_MAXHEALTH 事件
     -- 低频刷新补正
     local function updateHealth()
-        if touch.hasHealthUpdateOnFrame then
-            return
-        end
-        touch.hasHealthUpdateOnFrame = true
         if not unitExists then
             return
         end
@@ -177,10 +155,6 @@ After(2, function()                         -- 延迟加载
     -- 基于 UNIT_POWER_UPDATE 事件
     -- 低频刷新补正
     local function updatePower()
-        if touch.hasPowerUpdateOnFrame then
-            return
-        end
-        touch.hasPowerUpdateOnFrame = true
         if not unitExists then
             return
         end
@@ -197,10 +171,6 @@ After(2, function()                         -- 延迟加载
     -- 更新单位基础状态
     -- 中频刷新
     local function updateUnitBasicStatus()
-        if touch.hasUnitBasicStatusUpdateOnFrame then
-            return
-        end
-        touch.hasUnitBasicStatusUpdateOnFrame = true
         if not unitExists then
             return
         end
@@ -215,10 +185,6 @@ After(2, function()                         -- 延迟加载
     -- 更新距离状态
     -- 中频刷新
     local function updateRangeStatus()
-        if touch.hasRangeStatusUpdateOnFrame then
-            return
-        end
-        touch.hasRangeStatusUpdateOnFrame = true
         if not unitExists then
             return
         end
@@ -261,10 +227,6 @@ After(2, function()                         -- 延迟加载
     -- UNIT_SPELLCAST_CHANNEL_STOP、UNIT_SPELLCAST_CHANNEL_UPDATE 等事件
     -- 低频刷新补正
     local function updateCastAndChannel()
-        if touch.hasCastOrChannelUpdateOnFrame then
-            return
-        end
-        touch.hasCastOrChannelUpdateOnFrame = true
         if not unitExists then
             return
         end
@@ -283,7 +245,7 @@ After(2, function()                         -- 延迟加载
                 castNotInterruptible,
                 spellNotInterruptibleColor,
                 spellInterruptibleColor
-            )                                        -- 单位施法是否可中断
+            )                                       -- 单位施法是否可中断
             cell.channelIcon:clearCell()            -- 单位通道图标
             cell.channelIsInterruptible:clearCell() -- 单位通道是否可中断
             cell.channelDuration:clearCell()        -- 单位通道持续时间
@@ -306,7 +268,7 @@ After(2, function()                         -- 延迟加载
                 channelNotInterruptible,
                 spellNotInterruptibleColor,
                 spellInterruptibleColor
-            )                                     -- 单位通道是否可中断
+            )                                    -- 单位通道是否可中断
             cell.castIcon:clearCell()            -- 单位施法图标
             cell.castIsInterruptible:clearCell() -- 单位施法是否可中断
             cell.castDuration:clearCell()        -- 单位施法持续时间
@@ -406,11 +368,6 @@ After(2, function()                         -- 延迟加载
     local lowTimeElapsed = -random()      -- 随机初始时间，避免所有事件在同一帧更新
     local superLowTimeElapsed = -random() -- 随机初始时间，避免所有事件在同一帧更新
     eventFrame:HookScript("OnUpdate", function(_, elapsed)
-        -- 每帧重置触发器状态，确保状态更新函数在同一帧内只执行一次
-        for k in pairs(touch) do
-            touch[k] = false
-        end
-
         fastTimeElapsed = fastTimeElapsed + elapsed
         if fastTimeElapsed > 0.1 then
             fastTimeElapsed = fastTimeElapsed - 0.1

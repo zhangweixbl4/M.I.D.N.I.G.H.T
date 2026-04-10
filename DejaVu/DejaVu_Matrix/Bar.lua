@@ -35,7 +35,7 @@ Bar.currentValueIsSecret = nil
 ---@param width number 宽度
 ---@return Bar|nil 返回Bar实例, 如果父框架不存在则返回nil
 function Bar:New(x, y, width)
-    if not addonTable.Matrix.MartixFrame then
+    if not addonTable.MartixFrame then
         return nil
     end
 
@@ -50,8 +50,8 @@ end
 ---@param y integer Y坐标
 ---@param width number 宽度
 function Bar:_initialize(x, y, width)
-    local parent = addonTable.Matrix.MartixFrame
-    local BarSize = addonTable.Matrix.SIZE.CELL
+    local parent = addonTable.MartixFrame
+    local BarSize = addonTable.SIZE.CELL
     local BarSlug = x .. "_" .. y
     local BarName = addonName .. "Bar_" .. BarSlug
 

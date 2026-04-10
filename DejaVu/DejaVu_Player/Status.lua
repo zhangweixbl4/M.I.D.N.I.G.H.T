@@ -59,8 +59,7 @@ zeroToOneCurve:SetType(Enum.LuaCurveType.Linear)
 zeroToOneCurve:AddPoint(0.0, CreateColor(0, 0, 0, 1))
 zeroToOneCurve:AddPoint(1.0, CreateColor(1, 1, 1, 1))
 
-local cell = {}                                         -- 状态单元格，提供给外部调用以更新状态显示
-local touch = {}                                        -- 触发器，提供给外部调用以触发状态更新
+local cell = {}                                         -- 状态单元格，提供给外部调用以更新状态显示                                    -- 触发器，提供给外部调用以触发状态更新
 
 After(2, function()                                     -- 延迟加载
     local eventFrame = CreateFrame("Frame")             -- 事件框架
@@ -118,12 +117,7 @@ After(2, function()                                     -- 延迟加载
     -- 更新异常状态
     -- 基于UNIT_AURA事件
     -- 低频刷新补正
-    touch.hasAuraUpdateOnFrame = false -- 本帧是否已经处理过 aura 更新，避免同一帧内多次处理
     local function updateAura()
-        if touch.hasAuraUpdateOnFrame then
-            return
-        end
-        touch.hasAuraUpdateOnFrame = true
         local bigDefenseTable = GetUnitAuraInstanceIDs("player", "HELPFUL|BIG_DEFENSIVE")
         local dispellableDebuffTable = GetUnitAuraInstanceIDs("player", "HARMFUL|RAID_PLAYER_DISPELLABLE")
         cell.hasBigDefense:setCellBoolean(#bigDefenseTable > 0, COLOR.STATUS_BOOLEAN.HAS_BIG_DEFENSE, COLOR.BLACK)
@@ -141,12 +135,7 @@ After(2, function()                                     -- 延迟加载
     -- 更新血量数据
     -- 基于UNIT_HEALTH和UNIT_MAXHEALTH事件
     -- 低频刷新补正
-    touch.hasHealthUpdateOnFrame = false -- 本帧是否已经处理过血量更新，避免同一帧内多次处理
     local function updateHealth()
-        if touch.hasHealthUpdateOnFrame then
-            return
-        end
-        touch.hasHealthUpdateOnFrame = true
         cell.healthPercent:setCell(UnitHealthPercent("player", true, zeroToOneCurve)) -- 单位生命值百分比
     end
     function eventFrame:UNIT_MAXHEALTH(unitToken)
@@ -164,12 +153,7 @@ After(2, function()                                     -- 延迟加载
     -- 更新能量数据
     -- 基于UNIT_POWER_UPDATE事件
     -- 低频刷新补正
-    touch.hasPowerUpdateOnFrame = false -- 本帧是否已经处理过能量更新，避免同一帧内多次处理
     local function updatePower()
-        if touch.hasPowerUpdateOnFrame then
-            return
-        end
-        touch.hasPowerUpdateOnFrame = true
         cell.powerPercent:setCell(UnitPowerPercent("player", UnitPowerType("player"), true, zeroToOneCurve)) -- 单位能量百分比
     end
     function eventFrame:UNIT_POWER_UPDATE(unitToken)
@@ -202,32 +186,20 @@ After(2, function()                                     -- 延迟加载
     -- 更新移动状态
     -- PLAYER_STOPPED_MOVING 和 PLAYER_STARTED_MOVING 事件刷新
     -- 低频刷新补正
-    touch.hasMovementUpdateOnFrame = false -- 本帧是否已经处理过移动更新，避免同一帧内多次处理
+
     -- 基于事件开始移动和停止移动都刷新状态，确保状态及时更新
     local function updateMovement_start()
-        if touch.hasMovementUpdateOnFrame then
-            return
-        end
-        touch.hasMovementUpdateOnFrame = true
         -- 延迟刷新，确保移动状态稳定
         cell.isMoving:setCell(COLOR.STATUS_BOOLEAN.IS_MOVING) -- 单位是否在移动
     end
 
     -- 基于事件停止
     local function updateMovement_stop()
-        if touch.hasMovementUpdateOnFrame then
-            return
-        end
-        touch.hasMovementUpdateOnFrame = true
         -- 延迟刷新，确保移动状态稳定
         cell.isMoving:setCell(COLOR.BLACK) -- 单位是否在移动
     end
     -- 补正
     local function updateMovement_fix()
-        if touch.hasMovementUpdateOnFrame then
-            return
-        end
-        touch.hasMovementUpdateOnFrame = true
         -- 延迟刷新，确保移动状态稳定
         cell.isMoving:setCellBoolean(GetUnitSpeed("player") > 0, COLOR.STATUS_BOOLEAN.IS_MOVING, COLOR.BLACK) -- 单位是否在移动
     end
@@ -282,14 +254,9 @@ After(2, function()                                     -- 延迟加载
     -- 更新施法、通道和蓄力状态
     -- 基于 UNIT_SPELLCAST_START、UNIT_SPELLCAST_STOP、UNIT_SPELLCAST_CHANNEL_START、UNIT_SPELLCAST_CHANNEL_STOP、UNIT_SPELLCAST_CHANNEL_UPDATE 事件
     -- 低频补正
-    touch.hasCastOrChannelUpdateOnFrame = false -- 本帧是否已经处理过施法或通道更新，避免同一帧内多次处理
     local inCasting = false
     local inChanneling = false
     local function updateCastAndChannel()
-        if touch.hasCastOrChannelUpdateOnFrame then
-            return
-        end
-        touch.hasCastOrChannelUpdateOnFrame = true
         local castIcon = select(3, UnitCastingInfo("player"))
         if castIcon then
             inCasting = true
@@ -402,9 +369,6 @@ After(2, function()                                     -- 延迟加载
     local superLowTimeElapsed = -random() -- 随机初始时间，避免所有事件在同一帧更新
     eventFrame:HookScript("OnUpdate", function(frame, elapsed)
         -- 每帧重置触发器状态，确保状态更新函数在同一帧内只执行一次
-        for k in pairs(touch) do
-            touch[k] = false
-        end
         fastTimeElapsed = fastTimeElapsed + elapsed
         if fastTimeElapsed > 0.1 then
             fastTimeElapsed = fastTimeElapsed - 0.1

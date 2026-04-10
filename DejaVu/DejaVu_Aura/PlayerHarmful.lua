@@ -56,9 +56,6 @@ After(2, function()
     end)
 
     function eventFrame:UNIT_AURA(unitToken, info)
-        if self == nil or unitToken ~= UNIT_KEY then
-            return
-        end
         if info.isFullUpdate then
             controller.refreshAll()
             return

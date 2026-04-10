@@ -40,32 +40,22 @@ After(2, function()
     -- insert(UNIT_ABSORB_AMOUNT_CHANGED, { unit = "player", func = updateDamageAbsorbs })
     -- insert(UNIT_HEAL_ABSORB_AMOUNT_CHANGED, { unit = "player", func = updateHealAbsorbs })
 
-    local touch = {
-        UNIT_MAX_HEALTH = false,
-        UNIT_ABSORB_AMOUNT_CHANGED = false,
-        UNIT_HEAL_ABSORB_AMOUNT_CHANGED = false,
-    }
-    function eventFrame:UNIT_MAX_HEALTH(unitToken)
-        if touch.UNIT_MAX_HEALTH then return end
-        touch.UNIT_MAX_HEALTH = true
+
+    function eventFrame:UNIT_MAXHEALTH(unitToken)
         updateMaxHealth()
         updateDamageAbsorbs()
         updateHealAbsorbs()
     end
 
     function eventFrame:UNIT_ABSORB_AMOUNT_CHANGED(unitToken)
-        if touch.UNIT_ABSORB_AMOUNT_CHANGED then return end
-        touch.UNIT_ABSORB_AMOUNT_CHANGED = true
         updateDamageAbsorbs()
     end
 
     function eventFrame:UNIT_HEAL_ABSORB_AMOUNT_CHANGED(unitToken)
-        if touch.UNIT_HEAL_ABSORB_AMOUNT_CHANGED then return end
-        touch.UNIT_HEAL_ABSORB_AMOUNT_CHANGED = true
         updateHealAbsorbs()
     end
 
-    eventFrame:RegisterUnitEvent("UNIT_MAX_HEALTH", "player")
+    eventFrame:RegisterUnitEvent("UNIT_MAXHEALTH", "player")
     eventFrame:RegisterUnitEvent("UNIT_ABSORB_AMOUNT_CHANGED", "player")
     eventFrame:RegisterUnitEvent("UNIT_HEAL_ABSORB_AMOUNT_CHANGED", "player")
 
@@ -75,9 +65,7 @@ After(2, function()
     local superLowTimeElapsed = -random() -- 随机初始时间，避免所有事件在同一帧更新
     eventFrame:HookScript("OnUpdate", function(frame, elapsed)
         -- 每帧重置触发器状态，确保状态更新函数在同一帧内只执行一次
-        for k in pairs(touch) do
-            touch[k] = false
-        end
+
         -- fastTimeElapsed = fastTimeElapsed + elapsed
         -- if fastTimeElapsed > 0.1 then
         --     fastTimeElapsed = fastTimeElapsed - 0.1

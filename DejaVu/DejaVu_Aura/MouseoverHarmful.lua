@@ -81,23 +81,14 @@ After(2, function()
     end
 
     function eventFrame:UPDATE_MOUSEOVER_UNIT()
-        if self == nil then
-            return
-        end
         controller.refreshAll()
     end
 
     function eventFrame:CURSOR_CHANGED()
-        if self == nil then
-            return
-        end
         controller.refreshAll()
     end
 
     function eventFrame:UNIT_FLAGS(unitToken)
-        if self == nil or unitToken ~= UNIT_KEY then
-            return
-        end
         controller.refreshAll()
     end
 
