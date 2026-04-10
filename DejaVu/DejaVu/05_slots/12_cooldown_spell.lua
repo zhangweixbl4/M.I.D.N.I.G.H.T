@@ -135,13 +135,13 @@ local function InitializeCooldownFrame()
         updateUnknown()
     end
     fullUpdate()
-    table.insert(SPELLS_CHANGED, updateIcon)      -- 技能变更时更新图标
-    table.insert(SPELLS_CHANGED, updateRemaining) -- 技能变更时更新冷却剩余时间
-    table.insert(SPELLS_CHANGED, updateOverlayed) -- 技能变更时更新高亮状态
-    table.insert(SPELLS_CHANGED, updateUnknown)   -- 技能变更时更新法术书收录状态
-    table.insert(OnUpdateHigh, updateIcon)        -- 高频更新冷却剩余时间
-    table.insert(OnUpdateHigh, updateRemaining)   -- 高频更新冷却剩余时间
-    table.insert(OnUpdateStd, updateOverlayed)    -- 低频更新技能高亮状态
-    table.insert(OnUpdateHigh, updateUnusable)    -- 低频更新技能不可施放状态
+    -- table.insert(SPELLS_CHANGED, updateIcon)      -- 技能变更时更新图标
+    -- table.insert(SPELLS_CHANGED, updateRemaining) -- 技能变更时更新冷却剩余时间
+    -- table.insert(SPELLS_CHANGED, updateOverlayed) -- 技能变更时更新高亮状态
+    -- table.insert(SPELLS_CHANGED, updateUnknown)   -- 技能变更时更新法术书收录状态
+    -- table.insert(OnUpdateHigh, updateIcon)        -- 高频更新冷却剩余时间
+    -- table.insert(OnUpdateHigh, updateRemaining)   -- 高频更新冷却剩余时间
+    -- table.insert(OnUpdateStd, updateOverlayed)    -- 低频更新技能高亮状态
+    table.insert(OnUpdateHigh, fullUpdate)    -- 低频更新技能不可施放状态
 end
-table.insert(InitUI, InitializeCooldownFrame)     -- 初始化时创建冷却技能槽位
+table.insert(InitUI, InitializeCooldownFrame) -- 初始化时创建冷却技能槽位

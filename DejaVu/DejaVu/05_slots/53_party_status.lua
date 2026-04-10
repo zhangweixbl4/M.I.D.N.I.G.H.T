@@ -71,7 +71,7 @@ local function InitializePartyBar()
             cell.unitIsInCombat:setCellBoolean(UnitAffectingCombat(unitToken), COLOR.STATUS_BOOLEAN.IS_IN_COMBAT, COLOR.BLACK) -- 单位是否在战斗中
             cell.unitIsTarget:setCellBoolean(UnitIsUnit(unitToken, "target"), COLOR.STATUS_BOOLEAN.IS_TARGET, COLOR.BLACK)     -- 单位是否为目标
         end
-        insert(OnUpdateHigh, updateHighFrequency)
+        -- insert(OnUpdateHigh, updateHighFrequency)
 
         local function updateStdFrequency()
             unitExists = UnitExists(unitToken)
@@ -86,7 +86,7 @@ local function InitializePartyBar()
             cell.unitIsInRangedRange:setCellBoolean(maxRange <= addonTable.RangedRange, COLOR.STATUS_BOOLEAN.IS_IN_RANGED_RANGE, COLOR.BLACK) -- 单位是否在远程范围内
             cell.unitIsInMeleeRange:setCellBoolean(maxRange <= 5, COLOR.STATUS_BOOLEAN.IS_IN_MELEE_RANGE, COLOR.BLACK)                        -- 单位是否在近战范围内
         end
-        insert(OnUpdateStd, updateStdFrequency)
+        -- insert(OnUpdateStd, updateStdFrequency)
 
         local function updateHealthPercentCell()
             if not unitExists then
@@ -94,7 +94,7 @@ local function InitializePartyBar()
             end
             cell.unitHealthPercent:setCell(UnitHealthPercent(unitToken, true, zeroToOneCurve)) -- 单位生命值百分比
         end
-        insert(UNIT_HEALTH_CHANGED, { unit = unitToken, func = updateHealthPercentCell })
+        -- insert(UNIT_HEALTH_CHANGED, { unit = unitToken, func = updateHealthPercentCell })
 
         local function updatePowerPercentCell()
             if not unitExists then
@@ -102,7 +102,7 @@ local function InitializePartyBar()
             end
             cell.unitPowerPercent:setCell(UnitPowerPercent(unitToken, UnitPowerType(unitToken), true, zeroToOneCurve)) -- 单位能量百分比
         end
-        insert(UNIT_POWER_CHANGED, { unit = unitToken, func = updatePowerPercentCell })
+        -- insert(UNIT_POWER_CHANGED, { unit = unitToken, func = updatePowerPercentCell })
 
         local function updateOnAuraEvent()
             local bigDefenseTable = GetUnitAuraInstanceIDs(unitToken, "HELPFUL|BIG_DEFENSIVE")
@@ -110,7 +110,7 @@ local function InitializePartyBar()
             cell.unitHasBigDefense:setCellBoolean(#bigDefenseTable > 0, COLOR.STATUS_BOOLEAN.HAS_BIG_DEFENSE, COLOR.BLACK)
             cell.unitHasDispellableDebuff:setCellBoolean(#dispellableDebuffTable > 0, COLOR.STATUS_BOOLEAN.HAS_DISPELLABLE_DEBUFF, COLOR.BLACK)
         end
-        insert(UNIT_AURA_CHANGED, { unit = unitToken, func = updateOnAuraEvent })
+        -- insert(UNIT_AURA_CHANGED, { unit = unitToken, func = updateOnAuraEvent })
 
 
         local function updateOnParthChanged()
@@ -128,10 +128,11 @@ local function InitializePartyBar()
             unitExists = UnitExists(unitToken)
             cell.unitExists:setCellBoolean(unitExists, COLOR.STATUS_BOOLEAN.EXISTS, COLOR.BLACK)
         end
-        insert(PARTY_CHANGED, updateOnParthChanged)
-        insert(OnUpdateLow, updateOnParthChanged)
-        insert(OnUpdateHigh, updateUnitExist)
+        -- insert(PARTY_CHANGED, updateOnParthChanged)
+        -- insert(OnUpdateLow, updateOnParthChanged)
+        -- insert(OnUpdateHigh, updateUnitExist)
         updateOnParthChanged()
+        insert(OnUpdateHigh, updateUnitExist)
     end
 end
 

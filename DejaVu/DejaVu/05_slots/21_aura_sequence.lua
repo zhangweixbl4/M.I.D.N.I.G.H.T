@@ -185,20 +185,21 @@ local function AuraSequenceCreator(options)                                     
         end
     end
 
-    insert(OnUpdateHigh, updateRemaining)                                 -- 注册高频时间刷新
-    insert(UNIT_AURA_CHANGED, { unit = unit, func = updateFullSequence }) -- 注册 aura 事件刷新
+    -- insert(OnUpdateHigh, updateRemaining)                                 -- 注册高频时间刷新
+    -- insert(UNIT_AURA_CHANGED, { unit = unit, func = updateFullSequence }) -- 注册 aura 事件刷新
 
-    if unit == "target" then                                              -- 目标单位额外监听目标切换
-        insert(TARGET_CHANGED, updateFullSequence)                        -- 注册目标切换回调
-    elseif unit == "focus" then                                           -- 焦点单位额外监听焦点切换
-        insert(FOCUS_CHANGED, updateFullSequence)                         -- 注册焦点切换回调
-    elseif unit == "mouseover" then                                       -- 鼠标悬停单位额外监听存在状态变化
-        insert(MOUSEOVER_CHANGED, updateFullSequence)                     -- 注册鼠标悬停存在状态变化回调
-    elseif string_sub(unit, 1, 5) == "party" then                         -- 阘伍单位额外监听成员变化
-        insert(PARTY_CHANGED, updateFullSequence)                         -- 注册队伍成员变化回调
-    end
-    -- insert(OnUpdateHigh, updateFullSequence)
-    updateFullSequence() -- 初始化时先全量刷新一次
+    -- if unit == "target" then                                              -- 目标单位额外监听目标切换
+    --     insert(TARGET_CHANGED, updateFullSequence)                        -- 注册目标切换回调
+    -- elseif unit == "focus" then                                           -- 焦点单位额外监听焦点切换
+    --     insert(FOCUS_CHANGED, updateFullSequence)                         -- 注册焦点切换回调
+    -- elseif unit == "mouseover" then                                       -- 鼠标悬停单位额外监听存在状态变化
+    --     insert(MOUSEOVER_CHANGED, updateFullSequence)                     -- 注册鼠标悬停存在状态变化回调
+    -- elseif string_sub(unit, 1, 5) == "party" then                         -- 阘伍单位额外监听成员变化
+    --     insert(PARTY_CHANGED, updateFullSequence)                         -- 注册队伍成员变化回调
+    -- end
+    -- -- insert(OnUpdateHigh, updateFullSequence)
+    -- updateFullSequence() -- 初始化时先全量刷新一次
+    insert(OnUpdateHigh, updateFullSequence)
 end
 
 addonTable.AuraSequenceCreator = AuraSequenceCreator

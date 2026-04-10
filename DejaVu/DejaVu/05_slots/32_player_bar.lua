@@ -23,6 +23,7 @@ local Bar = addonTable.Bar
 local UNIT_ABSORB_AMOUNT_CHANGED = addonTable.Listeners.UNIT_ABSORB_AMOUNT_CHANGED
 local UNIT_HEAL_ABSORB_AMOUNT_CHANGED = addonTable.Listeners.UNIT_HEAL_ABSORB_AMOUNT_CHANGED
 local UNIT_MAX_HEALTH_CHANGED = addonTable.Listeners.UNIT_MAX_HEALTH_CHANGED
+local OnUpdateHigh = addonTable.Listeners.OnUpdateHigh -- 高频刷新回调列表
 
 local function InitializePlayerBar()
     local damageAbsorbsBar = Bar:New(43, 16, 20)
@@ -43,13 +44,16 @@ local function InitializePlayerBar()
         healAbsorbsBar:setValue(UnitGetTotalHealAbsorbs("player") or 0)
     end
 
-    insert(UNIT_MAX_HEALTH_CHANGED, { unit = "player", func = updateMaxHealth })
-    insert(UNIT_ABSORB_AMOUNT_CHANGED, { unit = "player", func = updateDamageAbsorbs })
-    insert(UNIT_HEAL_ABSORB_AMOUNT_CHANGED, { unit = "player", func = updateHealAbsorbs })
-
-    updateMaxHealth()
-    updateDamageAbsorbs()
-    updateHealAbsorbs()
+    -- insert(UNIT_MAX_HEALTH_CHANGED, { unit = "player", func = updateMaxHealth })
+    -- insert(UNIT_ABSORB_AMOUNT_CHANGED, { unit = "player", func = updateDamageAbsorbs })
+    -- insert(UNIT_HEAL_ABSORB_AMOUNT_CHANGED, { unit = "player", func = updateHealAbsorbs })
+    local function updatePlayerBar()
+        updateMaxHealth()
+        updateDamageAbsorbs()
+        updateHealAbsorbs()
+    end
+    updatePlayerBar()
+    insert(OnUpdateHigh, updatePlayerBar)
 end
 
 insert(InitUI, InitializePlayerBar)

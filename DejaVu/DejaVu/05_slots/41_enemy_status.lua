@@ -121,7 +121,7 @@ local function UnitStatusSequenceCreator(options)                   -- 创建一
         cell.unitIsInCombat:setCellBoolean(UnitAffectingCombat(unit), COLOR.STATUS_BOOLEAN.IS_IN_COMBAT, COLOR.BLACK) -- 单位是否在战斗中
         cell.unitIsTarget:setCellBoolean(UnitIsUnit(unit, "target"), COLOR.STATUS_BOOLEAN.IS_TARGET, COLOR.BLACK)     -- 单位是否为目标
     end
-    insert(OnUpdateHigh, updateHighFrequency)
+    -- insert(OnUpdateHigh, updateHighFrequency)
 
     local function updateStdFrequency()
         if not unitExists then
@@ -135,7 +135,7 @@ local function UnitStatusSequenceCreator(options)                   -- 创建一
         cell.unitIsInRangedRange:setCellBoolean(maxRange <= addonTable.RangedRange, COLOR.STATUS_BOOLEAN.IS_IN_RANGED_RANGE, COLOR.BLACK) -- 单位是否在远程范围内
         cell.unitIsInMeleeRange:setCellBoolean(maxRange <= 5, COLOR.STATUS_BOOLEAN.IS_IN_MELEE_RANGE, COLOR.BLACK)                        -- 单位是否在近战范围内
     end
-    insert(OnUpdateStd, updateStdFrequency)
+    -- insert(OnUpdateStd, updateStdFrequency)
 
     local function updateHealthPercentCell()
         if not unitExists then
@@ -143,7 +143,7 @@ local function UnitStatusSequenceCreator(options)                   -- 创建一
         end
         cell.unitHealthPercent:setCell(UnitHealthPercent(unit, true, zeroToOneCurve)) -- 单位生命值百分比
     end
-    insert(UNIT_HEALTH_CHANGED, { unit = unit, func = updateHealthPercentCell })
+    -- insert(UNIT_HEALTH_CHANGED, { unit = unit, func = updateHealthPercentCell })
 
     local function updatePowerPercentCell()
         if not unitExists then
@@ -151,7 +151,7 @@ local function UnitStatusSequenceCreator(options)                   -- 创建一
         end
         cell.unitPowerPercent:setCell(UnitPowerPercent(unit, UnitPowerType(unit), true, zeroToOneCurve)) -- 单位能量百分比
     end
-    insert(UNIT_POWER_CHANGED, { unit = unit, func = updatePowerPercentCell })
+    -- insert(UNIT_POWER_CHANGED, { unit = unit, func = updatePowerPercentCell })
 
     local unitIsCasting = false
     local unitIsChanneling = false
@@ -246,7 +246,7 @@ local function UnitStatusSequenceCreator(options)                   -- 创建一
         updateChannelVisual()
     end
     -- if unit == "mouseover" then
-    insert(OnUpdateHigh, updateCastState)
+    -- insert(OnUpdateHigh, updateCastState)
     -- else
     -- insert(UNIT_CAST_CHANGED, { unit = unit, func = updateCastState })
     -- end
@@ -270,7 +270,7 @@ local function UnitStatusSequenceCreator(options)                   -- 创建一
             cell.unitChannelDuration:clearCell()                                                         -- 单位通道施法持续时间
         end
     end
-    insert(OnUpdateHigh, updateCastDuration)
+    -- insert(OnUpdateHigh, updateCastDuration)
 
     local function updateFullStatus()
         if not UnitExists(unit) then
@@ -289,14 +289,14 @@ local function UnitStatusSequenceCreator(options)                   -- 创建一
     end
     updateFullStatus()
 
-    if unit == "target" then
-        insert(TARGET_CHANGED, updateFullStatus)
-    elseif unit == "focus" then
-        insert(FOCUS_CHANGED, updateFullStatus)
-    elseif unit == "mouseover" then
-        insert(MOUSEOVER_CHANGED, updateFullStatus)
-    end
-    insert(OnUpdateLow, updateFullStatus)
+    -- if unit == "target" then
+    --     insert(TARGET_CHANGED, updateFullStatus)
+    -- elseif unit == "focus" then
+    --     insert(FOCUS_CHANGED, updateFullStatus)
+    -- elseif unit == "mouseover" then
+    --     insert(MOUSEOVER_CHANGED, updateFullStatus)
+    -- end
+    insert(OnUpdateHigh, updateFullStatus)
 end
 
 local function InitializeUniversalUnitStatus() -- 初始化通用单位状态槽位

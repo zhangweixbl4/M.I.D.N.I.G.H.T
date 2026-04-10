@@ -263,7 +263,8 @@ local function InitializePlayerAuraStatus()
         cell.unitHasBigDefense:setCellBoolean(#bigDefenseTable > 0, COLOR.STATUS_BOOLEAN.HAS_BIG_DEFENSE, COLOR.BLACK)
         cell.unitHasDispellableDebuff:setCellBoolean(#dispellableDebuffTable > 0, COLOR.STATUS_BOOLEAN.HAS_DISPELLABLE_DEBUFF, COLOR.BLACK)
     end
-    insert(UNIT_AURA_CHANGED, { unit = "player", func = updateOnEvent })
+    -- insert(UNIT_AURA_CHANGED, { unit = "player", func = updateOnEvent })
     updateOnEvent()
+    insert(OnUpdateHigh, updateOnEvent)
 end
 insert(InitUI, InitializePlayerAuraStatus)
