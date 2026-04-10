@@ -151,7 +151,22 @@ class DruidRestoration(BaseRotation):
                 hot_count += 1
                 health_base += self.hot_hp_threshold
 
-            health_base = min(health_base, 100)
+            # 先找出单位身上可驱散的 debuff，再按黑名单过滤。
+            dispel_list = [debuff.title for debuff in member.debuff if (debuff.type in self.dispel_types)]
+            can_dispel = len(dispel_list) > 0
+            for dispel in dispel_list:
+                if dispel in self.dispel_blacklist:
+                    can_dispel = False
+                    break
+
+            # 记录完整 debuff 列表，方便调试和后续扩展判断。
+            debuff_list = [debuff.title for debuff in member.debuff if (debuff.title not in ["嗜血", "英勇", "4627d2d6b74b34fc"])]
+            # print(f"{member.unitToken}的debuff列表: {debuff_list}")
+
+            # 记录完整 buff 列表，方便调试和后续扩展判断。
+            buff_list = [buff.title for buff in member.buff]
+
+            health_base = min(health_base-10*len(debuff_list), 100)
             # health_base = max(health_base, 0)
 
             # 血量缺口表示补满到 100% 还需要多少治疗量。
@@ -170,20 +185,6 @@ class DruidRestoration(BaseRotation):
                     health_deficit = 0
                     health_base = 100
                     health_score = (health_base + damage_absorbs) * self.tank_health_score_multiplier
-
-            # 先找出单位身上可驱散的 debuff，再按黑名单过滤。
-            dispel_list = [debuff.title for debuff in member.debuff if (debuff.type in self.dispel_types)]
-            can_dispel = len(dispel_list) > 0
-            for dispel in dispel_list:
-                if dispel in self.dispel_blacklist:
-                    can_dispel = False
-                    break
-
-            # 记录完整 debuff 列表，方便调试和后续扩展判断。
-            debuff_list = [debuff.title for debuff in member.debuff]
-
-            # 记录完整 buff 列表，方便调试和后续扩展判断。
-            buff_list = [buff.title for buff in member.buff]
 
             member.rejuvenation_remaining = rejuvenation_remaining  # 回春术剩余时间
             member.germination_remaining = germination_remaining  # 萌芽剩余时间，等价于第二个回春
@@ -329,7 +330,7 @@ class DruidRestoration(BaseRotation):
         # print(f"{player.health_base=}", end="; ")
         # print(f"{player.rejuvenation_remaining=}", end="; ")
         # print(f"{player.rejuvenation_count=}", end="; ")
-
+        # print(self.ironbark_hp_threshold)
         if not player.alive:
             return self.idle("玩家已死亡")
 
@@ -385,6 +386,8 @@ class DruidRestoration(BaseRotation):
         # 铁木树皮冷却完成时，检查当前血量基线最低的队友是否低于铁木树皮阈值。
         # 如果满足条件，就对这个最低血量基线目标施放铁木树皮。
         # 铁木树皮不对坦克释放。
+        # print(non_tank_lowest_health_base_member.health_base)
+        # print(1)
         if ctx.spell_cooldown_ready("铁木树皮", spell_queue_window, ignore_gcd=True):
             # print("铁木树皮冷却好了", end="; ")
             # print(lowest_health_base_member.unitToken, end="; ")
