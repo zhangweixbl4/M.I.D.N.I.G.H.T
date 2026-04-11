@@ -14,10 +14,10 @@ addonTable.BurstRemaining = function()
     return min(60.0, max(0, addonTable.BurstTime - GetTime()))
 end
 
-SLASH_BURST1 = "/burst"
-SlashCmdList["BURST"] = function(msg)
-    local delaySeconds = tonumber(msg)
-    if delaySeconds then
-        addonTable.BurstTime = GetTime() + delaySeconds
-    end
-end
+-- SLASH_BURST1 = "/burst"
+-- SlashCmdList["BURST"] = function(msg)
+--     local delaySeconds = tonumber(msg)
+--     if delaySeconds then
+--         addonTable.BurstTime = GetTime() + delaySeconds
+--     end
+-- end

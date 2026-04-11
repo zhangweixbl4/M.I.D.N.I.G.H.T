@@ -44,13 +44,13 @@ DejaVu_Core.BurstRemaining = function()
     return min(60.0, max(0, DejaVu_Core.BurstTime - GetTime()))
 end
 
--- SLASH_BURST1 = "/burst"
--- SlashCmdList["BURST"] = function(msg)
---     local delaySeconds = tonumber(msg)
---     if delaySeconds then
---         DejaVu_Core.BurstTime = GetTime() + delaySeconds
---     end
--- end
+SLASH_BURST1 = "/burst"
+SlashCmdList["BURST"] = function(msg)
+    local delaySeconds = tonumber(msg)
+    if delaySeconds then
+        DejaVu_Core.BurstTime = GetTime() + delaySeconds
+    end
+end
 
 SetCVar("secretChallengeModeRestrictionsForced", 1)
 SetCVar("secretCombatRestrictionsForced", 1)

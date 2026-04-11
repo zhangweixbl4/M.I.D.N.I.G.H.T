@@ -72,14 +72,3 @@ end
 
 DejaVu_Core.Config = Config
 DejaVu_Core.ConfigRows = {}
-
-local spell_queue_window = Config("spell_queue_window") -- 滑块配置项
-
-
-local function spell_queue_window_updater(value)
-    print(value)
-end
-spell_queue_window:register_callback(spell_queue_window_updater)
-
-
-DejaVu_Core.spell_queue_window = spell_queue_window

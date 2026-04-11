@@ -30,6 +30,8 @@ After(2, function() -- 2 秒后执行，确保 DejaVu 核心已加载完成
 
     -- 左上的CharCell验证点，验证字体是否正确加载。
     CharCell:New(0, 2):setCell("*")
+    -- 右上角白色检测点
+    Cell:New(82, 2):setCell(COLOR.WHITE) -- 右上角监测点
 
 
     -- 下方为各区域标记点，绿色为标记点。

@@ -2,8 +2,8 @@
 ## Title: DéjàVu 血DK
 ## Author: Émile Boirac
 ## Version: 12.0.1.66709
-## Dependencies: DejaVu_Spell
-## LoadWith: DejaVu_Spell
+## Dependencies: DejaVu_Spell,DejaVu_Common
+## LoadWith: DejaVu_Common
 ## Category: DéjàVu 职业模组
 ## IconTexture: Interface\Icons\Spell_Deathknight_BloodPresence
 
