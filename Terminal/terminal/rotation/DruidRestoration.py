@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import cast
 from .base import BaseRotation
 from terminal.context import Context, Unit
+from datetime import datetime
 
 
 __all__ = ["DruidRestoration",]
@@ -113,6 +114,7 @@ class DruidRestoration(BaseRotation):
         party_members: list[RestorationPartyMember] = []
         for unit in ctx.parties:
             if unit.exists and unit.isInRangedRange and unit.alive:
+                # if unit.exists and unit.alive:
                 party_members.append(cast(RestorationPartyMember, unit))
         party_members.append(cast(RestorationPartyMember, ctx.player))
 
@@ -160,13 +162,13 @@ class DruidRestoration(BaseRotation):
                     break
 
             # 记录完整 debuff 列表，方便调试和后续扩展判断。
-            debuff_list = [debuff.title for debuff in member.debuff if (debuff.title not in ["嗜血", "英勇", "4627d2d6b74b34fc"])]
+            debuff_list = [debuff.title for debuff in member.debuff if (debuff.title not in ["嗜血", "英勇"])]
             # print(f"{member.unitToken}的debuff列表: {debuff_list}")
 
             # 记录完整 buff 列表，方便调试和后续扩展判断。
             buff_list = [buff.title for buff in member.buff]
 
-            health_base = min(health_base-10*len(debuff_list), 100)
+            health_base = min(health_base-5*len(debuff_list), 100)
             # health_base = max(health_base, 0)
 
             # 血量缺口表示补满到 100% 还需要多少治疗量。
@@ -200,7 +202,8 @@ class DruidRestoration(BaseRotation):
             member.rejuvenation_count = rejuvenation_count  # 回春层数，可能是 0 层、1 层、2 层
             member.can_dispel = can_dispel  # 是否有可驱散的debuff
             member.hot_count = hot_count  # 身上剩余的 HoT 数量（回春、萌芽、愈合、野性成长、生命绽放）
-
+        #     print(f"{member.unitToken}的状态: 血量基线={health_base:.2f}%", end="; ")
+        # print(f"{datetime.now().strftime('%H:%M:%S')}")
         return party_members
 
     def read_config(self, ctx: Context):
@@ -364,9 +367,6 @@ class DruidRestoration(BaseRotation):
         party_health_base_avg = sum(member.health_base for member in party_members) / len(party_members)
         # 当前血量基线最低的单位，很多保命和单抬逻辑都以它为目标。
         lowest_health_base_member = min(party_members, key=lambda member: member.health_base)
-        # 非坦克队友
-        non_tank_party_members = [member for member in party_members if (member.unitRole != "TANK")]
-        non_tank_lowest_health_base_member = min(non_tank_party_members, key=lambda member: member.health_base)
         # 丰饶层数供迅捷治愈逻辑使用。
         abundance_stack = player.buffStack("丰饶")
         # print(f"队伍平均治疗基线: {party_health_base_avg:.2f}, 最低血量的队员: {lowest_health_base_member.unitToken}({lowest_health_base_member.health_base:.2f}), 丰饶层数: {abundance_stack}")
@@ -386,15 +386,15 @@ class DruidRestoration(BaseRotation):
         # 铁木树皮冷却完成时，检查当前血量基线最低的队友是否低于铁木树皮阈值。
         # 如果满足条件，就对这个最低血量基线目标施放铁木树皮。
         # 铁木树皮不对坦克释放。
-        # print(non_tank_lowest_health_base_member.health_base)
+        # print(lowest_health_base_member.health_base)
         # print(1)
         if ctx.spell_cooldown_ready("铁木树皮", spell_queue_window, ignore_gcd=True):
             # print("铁木树皮冷却好了", end="; ")
             # print(lowest_health_base_member.unitToken, end="; ")
             # print(f"血量基线: {lowest_health_base_member.health_base}", end="; ")
-            if non_tank_lowest_health_base_member.health_base < self.ironbark_hp_threshold:
-                return self.cast(f"{non_tank_lowest_health_base_member.unitToken}铁木树皮")
-                # print(f"对{non_tank_lowest_health_base_member.unitToken}施放铁木树皮", end="; ")
+            if lowest_health_base_member.health_base < self.ironbark_hp_threshold:
+                return self.cast(f"{lowest_health_base_member.unitToken}铁木树皮")
+                # print(f"对{lowest_health_base_member.unitToken}施放铁木树皮", end="; ")
 
         # 0.2 树皮术逻辑（自己保命）
         # 树皮术冷却完成时，检查玩家自己的血量基线是否低于树皮术阈值。
@@ -439,7 +439,7 @@ class DruidRestoration(BaseRotation):
                 return self.cast("万灵之召")
                 # print("施放万灵之召", end="; ")
 
-            if (non_tank_lowest_health_base_member.health_base <= self.convoke_single_hp_threshold):
+            if (lowest_health_base_member.health_base <= self.convoke_single_hp_threshold):
                 return self.cast("万灵之召")
                 # print("施放万灵之召", end="; ")
 
@@ -469,7 +469,7 @@ class DruidRestoration(BaseRotation):
         # 如果满足条件，就先施放自然迅捷。
         # 针对非坦克玩家
         if ctx.spell_cooldown_ready("自然迅捷", spell_queue_window, ignore_gcd=True):
-            if non_tank_lowest_health_base_member.health_base < self.nature_swiftness_hp_threshold:
+            if lowest_health_base_member.health_base < self.nature_swiftness_hp_threshold:
                 return self.cast("自然迅捷")
                 # print("施放自然迅捷", end="; ")
 
