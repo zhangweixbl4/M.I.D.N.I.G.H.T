@@ -21,51 +21,59 @@ After(2, function()
     local damageAbsorbsBar = Bar:New(43, 16, 20)
     local healAbsorbsBar = Bar:New(64, 14, 20)
 
-    -- 这两条都按玩家最大生命值做刻度, 直接把官方数值透传给 StatusBar。
+    -- 更新玩家两条吸收条的刻度范围。
+    -- 基于 UNIT_MAXHEALTH 事件。
+    -- 2 秒补正时会单独再次调用这组更新函数。
     local function updateMaxHealth()
         local maxHealth = UnitHealthMax("player") or 0
         damageAbsorbsBar:setMinMaxValues(0, maxHealth)
         healAbsorbsBar:setMinMaxValues(0, maxHealth)
     end
 
+    -- 更新玩家的伤害吸收条数值。
+    -- 基于 UNIT_ABSORB_AMOUNT_CHANGED 事件。
+    -- 2 秒补正时会单独再次调用这组更新函数。
     local function updateDamageAbsorbs()
         damageAbsorbsBar:setValue(UnitGetTotalAbsorbs("player") or 0)
     end
 
+    -- 更新玩家的治疗吸收条数值。
+    -- 基于 UNIT_HEAL_ABSORB_AMOUNT_CHANGED 事件。
+    -- 2 秒补正时会单独再次调用这组更新函数。
     local function updateHealAbsorbs()
         healAbsorbsBar:setValue(UnitGetTotalHealAbsorbs("player") or 0)
     end
 
-    -- insert(UNIT_MAX_HEALTH_CHANGED, { unit = "player", func = updateMaxHealth })
-    -- insert(UNIT_ABSORB_AMOUNT_CHANGED, { unit = "player", func = updateDamageAbsorbs })
-    -- insert(UNIT_HEAL_ABSORB_AMOUNT_CHANGED, { unit = "player", func = updateHealAbsorbs })
-
-
+    -- 最大生命值变化时同步刻度，并顺手重刷两条吸收条。
+    -- 事件用途：处理吸收条刻度变化。
+    -- 2 秒补正：在 superLowTimeElapsed 档位里单独补正。
     function eventFrame:UNIT_MAXHEALTH(unitToken)
         updateMaxHealth()
         updateDamageAbsorbs()
         updateHealAbsorbs()
     end
+    eventFrame:RegisterUnitEvent("UNIT_MAXHEALTH", "player")
 
+    -- 伤害吸收变化时只刷新伤害吸收条。
+    -- 事件用途：处理 UNIT_ABSORB_AMOUNT_CHANGED。
+    -- 2 秒补正：在 superLowTimeElapsed 档位里单独补正。
     function eventFrame:UNIT_ABSORB_AMOUNT_CHANGED(unitToken)
         updateDamageAbsorbs()
     end
+    eventFrame:RegisterUnitEvent("UNIT_ABSORB_AMOUNT_CHANGED", "player")
 
+    -- 治疗吸收变化时只刷新治疗吸收条。
+    -- 事件用途：处理 UNIT_HEAL_ABSORB_AMOUNT_CHANGED。
+    -- 2 秒补正：在 superLowTimeElapsed 档位里单独补正。
     function eventFrame:UNIT_HEAL_ABSORB_AMOUNT_CHANGED(unitToken)
         updateHealAbsorbs()
     end
-
-    eventFrame:RegisterUnitEvent("UNIT_MAXHEALTH", "player")
-    eventFrame:RegisterUnitEvent("UNIT_ABSORB_AMOUNT_CHANGED", "player")
     eventFrame:RegisterUnitEvent("UNIT_HEAL_ABSORB_AMOUNT_CHANGED", "player")
 
-
-    -- local fastTimeElapsed = -random()     -- 随机初始时间，避免所有事件在同一帧更新
-    -- local lowTimeElapsed = -random()      -- 随机初始时间，避免所有事件在同一帧更新
+    -- local fastTimeElapsed = -random()     -- 当前未使用，保留 0.1 秒刷新档位结构
+    -- local lowTimeElapsed = -random()      -- 当前未使用，保留 0.5 秒刷新档位结构
     local superLowTimeElapsed = -random() -- 随机初始时间，避免所有事件在同一帧更新
     eventFrame:HookScript("OnUpdate", function(frame, elapsed)
-        -- 每帧重置触发器状态，确保状态更新函数在同一帧内只执行一次
-
         -- fastTimeElapsed = fastTimeElapsed + elapsed
         -- if fastTimeElapsed > 0.1 then
         --     fastTimeElapsed = fastTimeElapsed - 0.1
@@ -82,7 +90,6 @@ After(2, function()
             updateHealAbsorbs()
         end
     end)
-
 
     eventFrame:SetScript("OnEvent", function(self, event, ...)
         self[event](self, ...)

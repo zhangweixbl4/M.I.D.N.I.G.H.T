@@ -112,6 +112,9 @@ After(2, function()
         end
     end
 
+    -- 图标变化时只刷新对应技能图标。
+    -- 事件用途：处理 SPELL_UPDATE_ICON。
+    -- 2 秒补正：由 updateIconAll 单独补正。
     function eventFrame.SPELL_UPDATE_ICON(baseID)
         local spellID = getSpellIDFromBaseID(baseID)
         if not spellID then
@@ -136,8 +139,9 @@ After(2, function()
         end
     end
 
-    -- 更新技能高亮提示
-    -- 基于 SPELL_ACTIVATION_OVERLAY_GLOW_SHOW 和 SPELL_ACTIVATION_OVERLAY_GLOW_HIDE 事件
+    -- 更新技能高亮提示。
+    -- 基于 SPELL_ACTIVATION_OVERLAY_GLOW_SHOW 和 SPELL_ACTIVATION_OVERLAY_GLOW_HIDE 事件。
+    -- 当前没有有效的 2 秒补正。
     local function updateOverlayed(spellID)
         local isOverlayed = EvaluateColorFromBoolean(IsSpellOverlayed(spellID), COLOR.SPELL_BOOLEAN.IS_HIGH_LIGHTED, COLOR.BLACK)
         cellMap[spellID].overlayed:setCell(isOverlayed)
@@ -149,6 +153,9 @@ After(2, function()
         end
     end
 
+    -- 高亮出现时刷新对应技能的高亮状态。
+    -- 事件用途：处理 SPELL_ACTIVATION_OVERLAY_GLOW_SHOW。
+    -- 当前没有 2 秒补正。
     function eventFrame.SPELL_ACTIVATION_OVERLAY_GLOW_SHOW(spellID)
         local validID = getValidSpellID(spellID)
         if not validID then
@@ -157,6 +164,9 @@ After(2, function()
         updateOverlayed(validID)
     end
 
+    -- 高亮消失时刷新对应技能的高亮状态。
+    -- 事件用途：处理 SPELL_ACTIVATION_OVERLAY_GLOW_HIDE。
+    -- 当前没有 2 秒补正。
     function eventFrame.SPELL_ACTIVATION_OVERLAY_GLOW_HIDE(spellID)
         local validID = getValidSpellID(spellID)
         if not validID then
@@ -202,9 +212,9 @@ After(2, function()
     updateUnknownAll()
 
 
-    local fastTimeElapsed = -random()     -- 随机初始时间，避免所有事件在同一帧更新
-    local lowTimeElapsed = -random()      -- 随机初始时间，避免所有事件在同一帧更新
-    local superLowTimeElapsed = -random() -- 随机初始时间，避免所有事件在同一帧更新
+    local fastTimeElapsed = -random()     -- 0.1 秒刷新可施放状态
+    local lowTimeElapsed = -random()      -- 0.5 秒刷新已学会状态和冷却剩余
+    local superLowTimeElapsed = -random() -- 2 秒补正技能图标
     eventFrame:HookScript("OnUpdate", function(_, elapsed)
         fastTimeElapsed = fastTimeElapsed + elapsed
         if fastTimeElapsed > 0.1 then
@@ -216,7 +226,7 @@ After(2, function()
             lowTimeElapsed = lowTimeElapsed - 0.5
             updateUnknownAll()
             updateRemainingAll()
-            -- updateOverlayedAll()
+            -- updateOverlayedAll() -- 当前保留低频补正占位，未启用
         end
         superLowTimeElapsed = superLowTimeElapsed + elapsed
         if superLowTimeElapsed > 2 then

@@ -31,26 +31,10 @@ After(2, function()
     controller.refreshAll()
 
     local eventFrame = CreateFrame("Frame")
-    local fastTimeElapsed = -random()     -- 随机初始时间，避免所有事件在同一帧更新
-    local lowTimeElapsed = -random()      -- 随机初始时间，避免所有事件在同一帧更新
-    local superLowTimeElapsed = -random() -- 随机初始时间，避免所有事件在同一帧更新
-    eventFrame:HookScript("OnUpdate", function(frame, elapsed)
-        fastTimeElapsed = fastTimeElapsed + elapsed
-        if fastTimeElapsed > 0.1 then
-            fastTimeElapsed = fastTimeElapsed - 0.1
-            controller.updateRemainingAll()
-        end
-        lowTimeElapsed = lowTimeElapsed + elapsed
-        if lowTimeElapsed > 0.5 then
-            lowTimeElapsed = lowTimeElapsed - 0.5
-        end
-        superLowTimeElapsed = superLowTimeElapsed + elapsed
-        if superLowTimeElapsed > 2 then
-            superLowTimeElapsed = superLowTimeElapsed - 2
-            -- controller.refreshAll()
-        end
-    end)
 
+    -- Aura 列表变化时按当前限制做整组刷新。
+    -- 事件用途：处理玩家增益结构变化。
+    -- 当前没有 2 秒全量补正，只有 0.1 秒的剩余时间补正。
     function eventFrame:UNIT_AURA(unitToken, info)
         -- 因为无法判断isHarmful还是isHelpful，所以只能全量刷新。这个问题在12.0.5修正。等那时候补回来。
 
@@ -84,5 +68,25 @@ After(2, function()
     eventFrame:RegisterUnitEvent("UNIT_AURA", UNIT_KEY)
     eventFrame:SetScript("OnEvent", function(self, event, ...)
         self[event](self, ...)
+    end)
+
+    local fastTimeElapsed = -random()     -- 随机初始时间，避免所有事件在同一帧更新
+    -- local lowTimeElapsed = -random()      -- 当前未使用，保留 0.5 秒刷新档位结构
+    -- local superLowTimeElapsed = -random() -- 当前未使用，保留 2 秒刷新档位结构
+    eventFrame:HookScript("OnUpdate", function(frame, elapsed)
+        fastTimeElapsed = fastTimeElapsed + elapsed
+        if fastTimeElapsed > 0.1 then
+            fastTimeElapsed = fastTimeElapsed - 0.1
+            controller.updateRemainingAll()
+        end
+        -- lowTimeElapsed = lowTimeElapsed + elapsed
+        -- if lowTimeElapsed > 0.5 then
+        --     lowTimeElapsed = lowTimeElapsed - 0.5
+        -- end
+        -- superLowTimeElapsed = superLowTimeElapsed + elapsed
+        -- if superLowTimeElapsed > 2 then
+        --     superLowTimeElapsed = superLowTimeElapsed - 2
+        --     controller.refreshAll()
+        -- end
     end)
 end)

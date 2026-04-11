@@ -31,6 +31,10 @@ After(2, function()
     controller.refreshAll()
 
     local eventFrame = CreateFrame("Frame")
+
+    -- 预留鼠标指向 aura 事件处理骨架。
+    -- 事件用途：如果后续找到可靠的 mouseover aura 事件，可复用这里。
+    -- 当前没有注册，也没有 2 秒补正；实际刷新靠 0.5 秒轮询。
     function eventFrame:UNIT_AURA(unitToken, info)
         -- 因为无法判断isHarmful还是isHelpful，所以只能全量刷新。这个问题在12.0.5修正。等那时候补回来。
 
@@ -81,25 +85,25 @@ After(2, function()
         self[event](self, ...)
     end)
 
-    local fastTimeElapsed = -random()
+    -- local fastTimeElapsed = -random()     -- 当前未使用，保留 0.1 秒刷新档位结构
     local lowTimeElapsed = -random()
-    local superLowTimeElapsed = -random()
+    -- local superLowTimeElapsed = -random() -- 当前未使用，保留 2 秒刷新档位结构
     eventFrame:HookScript("OnUpdate", function(frame, elapsed)
-        fastTimeElapsed = fastTimeElapsed + elapsed
-        if fastTimeElapsed > 0.1 then
-            fastTimeElapsed = fastTimeElapsed - 0.1
-            -- controller.updateRemainingAll()
-            -- controller.refreshAll()
-        end
+        -- fastTimeElapsed = fastTimeElapsed + elapsed
+        -- if fastTimeElapsed > 0.1 then
+        --     fastTimeElapsed = fastTimeElapsed - 0.1
+        --     controller.updateRemainingAll()
+        --     controller.refreshAll()
+        -- end
         lowTimeElapsed = lowTimeElapsed + elapsed
         if lowTimeElapsed > 0.5 then
             lowTimeElapsed = lowTimeElapsed - 0.5
             controller.refreshAll()
         end
-        superLowTimeElapsed = superLowTimeElapsed + elapsed
-        if superLowTimeElapsed > 2 then
-            superLowTimeElapsed = superLowTimeElapsed - 2
-        end
+        -- superLowTimeElapsed = superLowTimeElapsed + elapsed
+        -- if superLowTimeElapsed > 2 then
+        --     superLowTimeElapsed = superLowTimeElapsed - 2
+        -- end
     end)
 end)
 

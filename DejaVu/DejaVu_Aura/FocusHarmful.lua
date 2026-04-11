@@ -31,26 +31,10 @@ After(2, function()
     controller.refreshAll()
 
     local eventFrame = CreateFrame("Frame")
-    local fastTimeElapsed = -random()     -- 随机初始时间，避免所有事件在同一帧更新
-    local lowTimeElapsed = -random()      -- 随机初始时间，避免所有事件在同一帧更新
-    local superLowTimeElapsed = -random() -- 随机初始时间，避免所有事件在同一帧更新
-    eventFrame:HookScript("OnUpdate", function(frame, elapsed)
-        fastTimeElapsed = fastTimeElapsed + elapsed
-        if fastTimeElapsed > 0.1 then
-            fastTimeElapsed = fastTimeElapsed - 0.1
-            controller.updateRemainingAll()
-        end
-        lowTimeElapsed = lowTimeElapsed + elapsed
-        if lowTimeElapsed > 0.5 then
-            lowTimeElapsed = lowTimeElapsed - 0.5
-        end
-        superLowTimeElapsed = superLowTimeElapsed + elapsed
-        if superLowTimeElapsed > 2 then
-            superLowTimeElapsed = superLowTimeElapsed - 2
-            -- controller.refreshAll()
-        end
-    end)
 
+    -- Aura 列表变化时按当前限制做整组刷新。
+    -- 事件用途：处理 focus 的 debuff 结构变化。
+    -- 当前没有 2 秒全量补正，只有 0.1 秒的剩余时间补正。
     function eventFrame:UNIT_AURA(unitToken, info)
         -- 因为无法判断isHarmful还是isHelpful，所以只能全量刷新。这个问题在12.0.5修正。等那时候补回来。
 
@@ -80,19 +64,44 @@ After(2, function()
             return -- 因为完全刷新了，所以return就行了
         end
     end
+    eventFrame:RegisterUnitEvent("UNIT_AURA", UNIT_KEY)
 
+    -- 切换焦点单位时重刷整组 debuff 槽位。
+    -- 事件用途：处理 focus 槽位整体换人。
+    -- 当前没有单独 2 秒补正。
     function eventFrame:PLAYER_FOCUS_CHANGED()
         controller.refreshAll()
     end
+    eventFrame:RegisterEvent("PLAYER_FOCUS_CHANGED")
 
+    -- 焦点旗标变化时重刷整组 debuff 槽位。
+    -- 事件用途：处理 focus 可交互状态变化。
+    -- 当前没有单独 2 秒补正。
     function eventFrame:UNIT_FLAGS(unitToken)
         controller.refreshAll()
     end
-
-    eventFrame:RegisterUnitEvent("UNIT_AURA", UNIT_KEY)
     eventFrame:RegisterUnitEvent("UNIT_FLAGS", UNIT_KEY)
-    eventFrame:RegisterEvent("PLAYER_FOCUS_CHANGED")
     eventFrame:SetScript("OnEvent", function(self, event, ...)
         self[event](self, ...)
+    end)
+
+    local fastTimeElapsed = -random()     -- 随机初始时间，避免所有事件在同一帧更新
+    -- local lowTimeElapsed = -random()      -- 当前未使用，保留 0.5 秒刷新档位结构
+    -- local superLowTimeElapsed = -random() -- 当前未使用，保留 2 秒刷新档位结构
+    eventFrame:HookScript("OnUpdate", function(frame, elapsed)
+        fastTimeElapsed = fastTimeElapsed + elapsed
+        if fastTimeElapsed > 0.1 then
+            fastTimeElapsed = fastTimeElapsed - 0.1
+            controller.updateRemainingAll()
+        end
+        -- lowTimeElapsed = lowTimeElapsed + elapsed
+        -- if lowTimeElapsed > 0.5 then
+        --     lowTimeElapsed = lowTimeElapsed - 0.5
+        -- end
+        -- superLowTimeElapsed = superLowTimeElapsed + elapsed
+        -- if superLowTimeElapsed > 2 then
+        --     superLowTimeElapsed = superLowTimeElapsed - 2
+        --     controller.refreshAll()
+        -- end
     end)
 end)

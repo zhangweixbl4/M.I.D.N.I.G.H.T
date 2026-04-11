@@ -120,9 +120,9 @@ After(2, function()                                     -- 延迟加载
     end
 
 
-    -- 更新异常状态
-    -- 基于UNIT_AURA事件
-    -- 低频刷新补正
+    -- 更新玩家的大防御和可驱散减益状态。
+    -- 基于 UNIT_AURA 事件。
+    -- 2 秒补正。
     local function updateAura()
         local bigDefenseTable = GetUnitAuraInstanceIDs("player", "HELPFUL|BIG_DEFENSIVE")
         local dispellableDebuffTable = GetUnitAuraInstanceIDs("player", "HARMFUL|RAID_PLAYER_DISPELLABLE")
@@ -130,6 +130,9 @@ After(2, function()                                     -- 延迟加载
         cell.hasDispellableDebuff:setCellBoolean(#dispellableDebuffTable > 0, COLOR.STATUS_BOOLEAN.HAS_DISPELLABLE_DEBUFF, COLOR.BLACK)
     end
 
+    -- Aura 结构变化时刷新玩家异常状态。
+    -- 事件用途：处理增减益列表变化。
+    -- 2 秒补正：由 superLowTimeElapsed 单独补正。
     function eventFrame:UNIT_AURA(unitToken, info)
         if info.isFullUpdate or info.removedAuraInstanceIDs or info.addedAuras then
             updateAura()
@@ -138,16 +141,23 @@ After(2, function()                                     -- 延迟加载
 
     eventFrame:RegisterUnitEvent("UNIT_AURA", "player")
 
-    -- 更新血量数据
-    -- 基于UNIT_HEALTH和UNIT_MAXHEALTH事件
-    -- 低频刷新补正
+    -- 更新玩家生命值百分比。
+    -- 基于 UNIT_HEALTH 和 UNIT_MAXHEALTH 事件。
+    -- 2 秒补正。
     local function updateHealth()
         cell.healthPercent:setCell(UnitHealthPercent("player", true, zeroToOneCurve)) -- 单位生命值百分比
     end
+
+    -- 最大生命值变化时刷新生命值百分比。
+    -- 事件用途：处理生命值刻度变化。
+    -- 2 秒补正：由 superLowTimeElapsed 单独补正。
     function eventFrame:UNIT_MAXHEALTH(unitToken)
         updateHealth()
     end
 
+    -- 当前生命值变化时刷新生命值百分比。
+    -- 事件用途：处理生命值进度变化。
+    -- 2 秒补正：由 superLowTimeElapsed 单独补正。
     function eventFrame:UNIT_HEALTH(unitToken)
         updateHealth()
     end
@@ -156,12 +166,16 @@ After(2, function()                                     -- 延迟加载
     eventFrame:RegisterUnitEvent("UNIT_HEALTH", "player")
 
 
-    -- 更新能量数据
-    -- 基于UNIT_POWER_UPDATE事件
-    -- 低频刷新补正
+    -- 更新玩家主能量百分比。
+    -- 基于 UNIT_POWER_UPDATE 事件。
+    -- 2 秒补正。
     local function updatePower()
         cell.powerPercent:setCell(UnitPowerPercent("player", UnitPowerType("player"), true, zeroToOneCurve)) -- 单位能量百分比
     end
+
+    -- 主能量变化时刷新能量百分比。
+    -- 事件用途：处理能量进度变化。
+    -- 2 秒补正：由 superLowTimeElapsed 单独补正。
     function eventFrame:UNIT_POWER_UPDATE(unitToken)
         updatePower()
     end
@@ -169,16 +183,18 @@ After(2, function()                                     -- 延迟加载
     eventFrame:RegisterUnitEvent("UNIT_POWER_UPDATE", "player")
 
 
-    -- 更新单位基础状态
-    -- 高频刷新
+    -- 更新玩家的存活、战斗和目标状态。
+    -- 没有稳定事件可覆盖所有变化。
+    -- 0.5 秒轮询，当前无 2 秒单独补正。
     local function updateUnitBasicStatus()
         cell.isAlive:setCellBoolean(UnitIsDeadOrGhost("player"), COLOR.BLACK, COLOR.STATUS_BOOLEAN.IS_ALIVE)          -- 单位是否存活
         cell.isInCombat:setCellBoolean(UnitAffectingCombat("player"), COLOR.STATUS_BOOLEAN.IS_IN_COMBAT, COLOR.BLACK) -- 单位是否在战斗中
         cell.isTarget:setCellBoolean(UnitIsUnit("player", "target"), COLOR.STATUS_BOOLEAN.IS_TARGET, COLOR.BLACK)     -- 单位是否为目标
     end
 
-    -- 更新单位动作状态
-    -- 高频刷新
+    -- 更新玩家的坐骑、选目标法术和聊天输入状态。
+    -- 没有稳定事件可覆盖所有变化。
+    -- 0.5 秒轮询，当前无 2 秒单独补正。
     local function updateUnitActionStatus()
         cell.isMounted:setCellBoolean(UnitInVehicle("player") or IsMounted(), COLOR.STATUS_BOOLEAN.IS_MOUNTED, COLOR.BLACK) -- 单位是否在坐骑
         cell.isSpellTargeting:setCellBoolean(SpellIsTargeting(), COLOR.STATUS_BOOLEAN.IS_SPELL_TARGETING, COLOR.BLACK)      -- 单位是否正在选择目标
@@ -189,32 +205,36 @@ After(2, function()                                     -- 延迟加载
         ) -- 单位是否正在聊天输入
     end
 
-    -- 更新移动状态
-    -- PLAYER_STOPPED_MOVING 和 PLAYER_STARTED_MOVING 事件刷新
-    -- 低频刷新补正
-
-    -- 基于事件开始移动和停止移动都刷新状态，确保状态及时更新
+    -- 玩家开始移动时点亮移动状态。
+    -- 事件用途：处理 PLAYER_STARTED_MOVING。
+    -- 2 秒补正：由 updateMovement_fix 单独补正。
     local function updateMovement_start()
-        -- 延迟刷新，确保移动状态稳定
         cell.isMoving:setCell(COLOR.STATUS_BOOLEAN.IS_MOVING) -- 单位是否在移动
     end
 
-    -- 基于事件停止
+    -- 玩家停止移动时熄灭移动状态。
+    -- 事件用途：处理 PLAYER_STOPPED_MOVING。
+    -- 2 秒补正：由 updateMovement_fix 单独补正。
     local function updateMovement_stop()
-        -- 延迟刷新，确保移动状态稳定
         cell.isMoving:setCell(COLOR.BLACK) -- 单位是否在移动
     end
-    -- 补正
+
+    -- 低频补正移动状态，防止事件丢失或顺序抖动。
+    -- 不走 updateAll，在 2 秒档位里单独补正。
     local function updateMovement_fix()
-        -- 延迟刷新，确保移动状态稳定
         cell.isMoving:setCellBoolean(GetUnitSpeed("player") > 0, COLOR.STATUS_BOOLEAN.IS_MOVING, COLOR.BLACK) -- 单位是否在移动
     end
 
-
+    -- 开始移动时立即点亮移动状态。
+    -- 事件用途：处理 PLAYER_STARTED_MOVING。
+    -- 2 秒补正：由 updateMovement_fix 单独补正。
     function eventFrame:PLAYER_STARTED_MOVING()
         updateMovement_start()
     end
 
+    -- 停止移动时立即熄灭移动状态。
+    -- 事件用途：处理 PLAYER_STOPPED_MOVING。
+    -- 2 秒补正：由 updateMovement_fix 单独补正。
     function eventFrame:PLAYER_STOPPED_MOVING()
         updateMovement_stop()
     end
@@ -222,28 +242,28 @@ After(2, function()                                     -- 延迟加载
     eventFrame:RegisterEvent("PLAYER_STARTED_MOVING")
     eventFrame:RegisterEvent("PLAYER_STOPPED_MOVING")
 
-    -- 更新队伍状态
-    -- 低频刷新
+    -- 更新玩家是否在队伍或团队中。
+    -- 无单独事件，依赖 2 秒轮询。
     local function updateUnitGroupStatus()
         cell.isInGroupOrRaid:setCellBoolean(IsInGroup() or IsInRaid(), COLOR.STATUS_BOOLEAN.IS_IN_GROUP_OR_RAID, COLOR.BLACK) -- 单位是否在队伍/团队中
     end
 
-    -- 更新饰品可用状态
-    -- 低频刷新
+    -- 更新两个饰品的可用状态。
+    -- 无单独事件，依赖 2 秒轮询。
     local function updateTrinketUsable()
         cell.trinket1CooldownUsable:setCellBoolean(slotUsable(13), COLOR.STATUS_BOOLEAN.TRINKET_1_USABLE, COLOR.BLACK) -- 饰品 1是否可用
         cell.trinket2CooldownUsable:setCellBoolean(slotUsable(14), COLOR.STATUS_BOOLEAN.TRINKET_2_USABLE, COLOR.BLACK) -- 饰品 2是否可用
     end
 
-    -- 更新治疗物品可用状态
-    -- 低频刷新
+    -- 更新生命石和治疗药水的可用状态。
+    -- 无单独事件，依赖 2 秒轮询。
     local function updateHealingItemUsable()
         cell.healthstoneCooldownUsable:setCellBoolean(itemUsable(224464), COLOR.STATUS_BOOLEAN.HEALTHSTONE_USABLE, COLOR.BLACK)      -- 生命石是否可用
         cell.healingPotionCooldownUsable:setCellBoolean(itemUsable(258138), COLOR.STATUS_BOOLEAN.HEALING_POTION_USABLE, COLOR.BLACK) -- 治疗药水是否可用
     end
 
-    -- 更新附近敌人数量
-    -- 中频刷新
+    -- 更新近战范围内的敌人数量。
+    -- 无可靠事件，依赖 0.5 秒轮询。
     local function updateEnemyCount()
         local count = 0
 
@@ -260,9 +280,9 @@ After(2, function()                                     -- 延迟加载
         cell.enemyCount:setCellRGBA(min(count / 51, 1))
     end
 
-    -- 更新施法、通道和蓄力状态
-    -- 基于 UNIT_SPELLCAST_START、UNIT_SPELLCAST_STOP、UNIT_SPELLCAST_CHANNEL_START、UNIT_SPELLCAST_CHANNEL_STOP、UNIT_SPELLCAST_CHANNEL_UPDATE 事件
-    -- 低频补正
+    -- 更新玩家的施法、通道和蓄力状态。
+    -- 基于 UNIT_SPELLCAST_* 事件。
+    -- 2 秒补正。
     local inCasting = false
     local inChanneling = false
     local function updateCastAndChannel()
@@ -301,6 +321,9 @@ After(2, function()                                     -- 延迟加载
             cell.channelDuration:clearCell() -- 通道持续时间
         end
     end
+    -- 施法和通道状态变化时刷新图标、是否可中断和蓄力信息。
+    -- 事件用途：处理 UNIT_SPELLCAST_* 这一组事件。
+    -- 2 秒补正：由 superLowTimeElapsed 单独补正。
     function eventFrame:UNIT_SPELLCAST_INTERRUPTED(unitToken)
         updateCastAndChannel()
     end
@@ -352,8 +375,9 @@ After(2, function()                                     -- 延迟加载
     eventFrame:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_START", "player")
     eventFrame:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_STOP", "player")
 
-    -- 更新施法进度
-    -- 高频刷新
+    -- 更新施法和通道的进度条颜色。
+    -- 无可靠事件可持续驱动进度。
+    -- 0.1 秒轮询，当前无 2 秒单独补正。
     local function updateCastAndChannelDuration()
         -- print("updateCastAndChannelDuration")
         local castDuration = inCasting and UnitCastingDuration("player") or nil
@@ -373,11 +397,10 @@ After(2, function()                                     -- 延迟加载
 
 
 
-    local fastTimeElapsed = -random()     -- 随机初始时间，避免所有事件在同一帧更新
-    local lowTimeElapsed = -random()      -- 随机初始时间，避免所有事件在同一帧更新
-    local superLowTimeElapsed = -random() -- 随机初始时间，避免所有事件在同一帧更新
+    local fastTimeElapsed = -random()     -- 0.1 秒刷新施法和通道进度
+    local lowTimeElapsed = -random()      -- 0.5 秒刷新基础状态、动作状态和附近敌人数量
+    local superLowTimeElapsed = -random() -- 2 秒补正事件驱动和低频状态
     eventFrame:HookScript("OnUpdate", function(frame, elapsed)
-        -- 每帧重置触发器状态，确保状态更新函数在同一帧内只执行一次
         fastTimeElapsed = fastTimeElapsed + elapsed
         if fastTimeElapsed > 0.1 then
             fastTimeElapsed = fastTimeElapsed - 0.1

@@ -101,9 +101,9 @@ After(2, function()                         -- 延迟加载
         cell.channelIsInterruptible:clearCell() -- 单位通道是否可中断 / updateCastAndChannel
     end
 
-    -- 检测目标单位是否存在，更新存在状态
-    -- 基于 PLAYER_TARGET_CHANGED 事件
-    -- 低频刷新补正
+    -- 检测鼠标指向单位是否存在，更新存在状态。
+    -- 当前无可靠事件，实际依赖 0.1 秒整组轮询。
+    -- 当前无 2 秒补正。
     local function updateUnitExists()
         unitExists = UnitExists(UNIT_KEY)
 
@@ -118,8 +118,9 @@ After(2, function()                         -- 延迟加载
     end
 
 
-    -- 更新职业和角色
-    -- 低频刷新
+    -- 更新鼠标指向单位的职业和角色。
+    -- 当前无可靠事件，实际依赖 0.1 秒整组轮询。
+    -- 当前无 2 秒补正。
     local function updateClassAndRole()
         if not unitExists then
             return
@@ -129,9 +130,9 @@ After(2, function()                         -- 延迟加载
         cell.unitRole:setCell(COLOR.ROLE[UnitGroupRolesAssigned(UNIT_KEY)] or COLOR.ROLE.NONE) -- 单位角色
     end
 
-    -- 更新血量数据
-    -- 基于 UNIT_HEALTH 和 UNIT_MAXHEALTH 事件
-    -- 低频刷新补正
+    -- 更新鼠标指向单位的生命值百分比。
+    -- 事件骨架已保留但当前未注册，实际依赖 0.1 秒整组轮询。
+    -- 当前无 2 秒补正。
     local function updateHealth()
         if not unitExists then
             return
@@ -151,9 +152,9 @@ After(2, function()                         -- 延迟加载
     -- eventFrame:RegisterUnitEvent("UNIT_MAXHEALTH", UNIT_KEY)
     -- eventFrame:RegisterUnitEvent("UNIT_HEALTH", UNIT_KEY)
 
-    -- 更新能量数据
-    -- 基于 UNIT_POWER_UPDATE 事件
-    -- 低频刷新补正
+    -- 更新鼠标指向单位的能量百分比。
+    -- 事件骨架已保留但当前未注册，实际依赖 0.1 秒整组轮询。
+    -- 当前无 2 秒补正。
     local function updatePower()
         if not unitExists then
             return
@@ -168,8 +169,9 @@ After(2, function()                         -- 延迟加载
 
     -- eventFrame:RegisterUnitEvent("UNIT_POWER_UPDATE", UNIT_KEY)
 
-    -- 更新单位基础状态
-    -- 中频刷新
+    -- 更新鼠标指向单位的基础状态。
+    -- 当前无可靠事件，实际依赖 0.1 秒整组轮询。
+    -- 当前无 2 秒补正。
     local function updateUnitBasicStatus()
         if not unitExists then
             return
@@ -182,8 +184,9 @@ After(2, function()                         -- 延迟加载
         cell.isTarget:setCellBoolean(UnitIsUnit(UNIT_KEY, "target"), COLOR.STATUS_BOOLEAN.IS_TARGET, COLOR.BLACK)
     end
 
-    -- 更新距离状态
-    -- 中频刷新
+    -- 更新鼠标指向单位的距离状态。
+    -- 当前无可靠事件，实际依赖 0.1 秒整组轮询。
+    -- 当前无 2 秒补正。
     local function updateRangeStatus()
         if not unitExists then
             return
@@ -215,10 +218,9 @@ After(2, function()                         -- 延迟加载
         return spellInterruptibleColor, spellNotInterruptibleColor
     end
 
-    -- 更新施法和通道状态
-    -- 基于 UNIT_SPELLCAST_START、UNIT_SPELLCAST_STOP、UNIT_SPELLCAST_CHANNEL_START、
-    -- UNIT_SPELLCAST_CHANNEL_STOP、UNIT_SPELLCAST_CHANNEL_UPDATE 等事件
-    -- 低频刷新补正
+    -- 更新鼠标指向单位的施法和通道状态。
+    -- 事件骨架已保留但当前未注册，实际依赖 0.1 秒整组轮询。
+    -- 当前无 2 秒补正。
     local function updateCastAndChannel()
         if not unitExists then
             return
@@ -324,8 +326,9 @@ After(2, function()                         -- 延迟加载
     -- eventFrame:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_START", UNIT_KEY)
     -- eventFrame:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_STOP", UNIT_KEY)
 
-    -- 更新施法和通道进度
-    -- 高频刷新
+    -- 更新施法和通道的进度颜色。
+    -- 当前无可靠事件，实际依赖 0.1 秒整组轮询。
+    -- 当前无 2 秒补正。
     local function updateCastAndChannelDuration()
         if not unitExists then
             return
@@ -346,6 +349,9 @@ After(2, function()                         -- 延迟加载
         end
     end
 
+    -- 鼠标指向格子的整组轮询刷新。
+    -- 用于 mouseover 没有可靠事件时兜底。
+    -- 当前无 2 秒补正。
     updateAll = function()
         updateUnitExists()
         updateClassAndRole()
@@ -357,33 +363,25 @@ After(2, function()                         -- 延迟加载
         updateCastAndChannelDuration()
     end
 
-    local fastTimeElapsed = -random()     -- 随机初始时间，避免所有事件在同一帧更新
-    local lowTimeElapsed = -random()      -- 随机初始时间，避免所有事件在同一帧更新
-    local superLowTimeElapsed = -random() -- 随机初始时间，避免所有事件在同一帧更新
+    local fastTimeElapsed = -random()     -- 0.1 秒轮询 mouseover 整组状态
+    -- local lowTimeElapsed = -random()      -- 当前未使用，保留 0.5 秒刷新档位结构
+    -- local superLowTimeElapsed = -random() -- 当前未使用，保留 2 秒刷新档位结构
     eventFrame:HookScript("OnUpdate", function(_, elapsed)
         fastTimeElapsed = fastTimeElapsed + elapsed
         if fastTimeElapsed > 0.1 then
             fastTimeElapsed = fastTimeElapsed - 0.1
-            -- updateCastAndChannelDuration()
             updateAll()
         end
 
-        lowTimeElapsed = lowTimeElapsed + elapsed
-        if lowTimeElapsed > 0.5 then
-            lowTimeElapsed = lowTimeElapsed - 0.5
-            -- updateUnitBasicStatus()
-            -- updateRangeStatus()
-        end
+        -- lowTimeElapsed = lowTimeElapsed + elapsed
+        -- if lowTimeElapsed > 0.5 then
+        --     lowTimeElapsed = lowTimeElapsed - 0.5
+        -- end
 
-        superLowTimeElapsed = superLowTimeElapsed + elapsed
-        if superLowTimeElapsed > 2 then
-            superLowTimeElapsed = superLowTimeElapsed - 2
-            -- updateUnitExists()
-            -- updateClassAndRole()
-            -- updateHealth()
-            -- updatePower()
-            -- updateCastAndChannel()
-        end
+        -- superLowTimeElapsed = superLowTimeElapsed + elapsed
+        -- if superLowTimeElapsed > 2 then
+        --     superLowTimeElapsed = superLowTimeElapsed - 2
+        -- end
     end)
 
     eventFrame:SetScript("OnEvent", function(self, event, ...)

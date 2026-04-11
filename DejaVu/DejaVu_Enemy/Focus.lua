@@ -101,9 +101,9 @@ After(2, function()                         -- 延迟加载
         cell.channelIsInterruptible:clearCell() -- 单位通道是否可中断 / updateCastAndChannel
     end
 
-    -- 检测目标单位是否存在，更新存在状态
-    -- 基于 PLAYER_TARGET_CHANGED 事件
-    -- 低频刷新补正
+    -- 检测焦点单位是否存在，更新存在状态。
+    -- 基于 PLAYER_FOCUS_CHANGED 事件。
+    -- 2 秒补正。
     local function updateUnitExists()
         unitExists = UnitExists(UNIT_KEY)
 
@@ -117,14 +117,17 @@ After(2, function()                         -- 延迟加载
         cell.exists:setCell(COLOR.STATUS_BOOLEAN.EXISTS) -- 单位存在状态
     end
 
+    -- 焦点切换时整组刷新当前焦点状态。
+    -- 事件用途：处理 PLAYER_FOCUS_CHANGED。
+    -- 2 秒补正：血量、能量、施法等状态在 superLowTimeElapsed 里分项补正；基础状态和距离只有 0.5 秒轮询。
     function eventFrame.PLAYER_FOCUS_CHANGED()
         updateAll()
     end
 
     eventFrame:RegisterEvent("PLAYER_FOCUS_CHANGED")
 
-    -- 更新职业和角色
-    -- 低频刷新
+    -- 更新焦点的职业和角色。
+    -- 无稳定事件，依赖 2 秒轮询。
     local function updateClassAndRole()
         if not unitExists then
             return
@@ -134,9 +137,9 @@ After(2, function()                         -- 延迟加载
         cell.unitRole:setCell(COLOR.ROLE[UnitGroupRolesAssigned(UNIT_KEY)] or COLOR.ROLE.NONE) -- 单位角色
     end
 
-    -- 更新血量数据
-    -- 基于 UNIT_HEALTH 和 UNIT_MAXHEALTH 事件
-    -- 低频刷新补正
+    -- 更新焦点的生命值百分比。
+    -- 基于 UNIT_HEALTH 和 UNIT_MAXHEALTH 事件。
+    -- 2 秒补正。
     local function updateHealth()
         if not unitExists then
             return
@@ -145,10 +148,16 @@ After(2, function()                         -- 延迟加载
         cell.healthPercent:setCell(UnitHealthPercent(UNIT_KEY, true, zeroToOneCurve)) -- 单位生命值百分比
     end
 
+    -- 最大生命值变化时刷新生命值百分比。
+    -- 事件用途：处理 UNIT_MAXHEALTH。
+    -- 2 秒补正：由 updateHealth 单独补正。
     function eventFrame.UNIT_MAXHEALTH()
         updateHealth()
     end
 
+    -- 当前生命值变化时刷新生命值百分比。
+    -- 事件用途：处理 UNIT_HEALTH。
+    -- 2 秒补正：由 updateHealth 单独补正。
     function eventFrame.UNIT_HEALTH()
         updateHealth()
     end
@@ -156,9 +165,9 @@ After(2, function()                         -- 延迟加载
     eventFrame:RegisterUnitEvent("UNIT_MAXHEALTH", UNIT_KEY)
     eventFrame:RegisterUnitEvent("UNIT_HEALTH", UNIT_KEY)
 
-    -- 更新能量数据
-    -- 基于 UNIT_POWER_UPDATE 事件
-    -- 低频刷新补正
+    -- 更新焦点的能量百分比。
+    -- 基于 UNIT_POWER_UPDATE 事件。
+    -- 2 秒补正。
     local function updatePower()
         if not unitExists then
             return
@@ -167,14 +176,18 @@ After(2, function()                         -- 延迟加载
         cell.powerPercent:setCell(UnitPowerPercent(UNIT_KEY, UnitPowerType(UNIT_KEY), true, zeroToOneCurve)) -- 单位能量百分比
     end
 
+    -- 能量变化时刷新能量百分比。
+    -- 事件用途：处理 UNIT_POWER_UPDATE。
+    -- 2 秒补正：由 updatePower 单独补正。
     function eventFrame.UNIT_POWER_UPDATE()
         updatePower()
     end
 
     eventFrame:RegisterUnitEvent("UNIT_POWER_UPDATE", UNIT_KEY)
 
-    -- 更新单位基础状态
-    -- 中频刷新
+    -- 更新焦点的存活、友敌、可攻击、战斗和目标状态。
+    -- 无稳定事件覆盖所有变化。
+    -- 0.5 秒轮询，当前无 2 秒补正。
     local function updateUnitBasicStatus()
         if not unitExists then
             return
@@ -187,8 +200,9 @@ After(2, function()                         -- 延迟加载
         cell.isTarget:setCellBoolean(UnitIsUnit(UNIT_KEY, "target"), COLOR.STATUS_BOOLEAN.IS_TARGET, COLOR.BLACK)
     end
 
-    -- 更新距离状态
-    -- 中频刷新
+    -- 更新焦点的远程和近战距离状态。
+    -- 无稳定事件，依赖 0.5 秒轮询。
+    -- 当前无 2 秒补正。
     local function updateRangeStatus()
         if not unitExists then
             return
@@ -220,10 +234,9 @@ After(2, function()                         -- 延迟加载
         return spellInterruptibleColor, spellNotInterruptibleColor
     end
 
-    -- 更新施法和通道状态
-    -- 基于 UNIT_SPELLCAST_START、UNIT_SPELLCAST_STOP、UNIT_SPELLCAST_CHANNEL_START、
-    -- UNIT_SPELLCAST_CHANNEL_STOP、UNIT_SPELLCAST_CHANNEL_UPDATE 等事件
-    -- 低频刷新补正
+    -- 更新焦点的施法和通道状态。
+    -- 基于 UNIT_SPELLCAST_* 事件。
+    -- 2 秒补正。
     local function updateCastAndChannel()
         if not unitExists then
             return
@@ -278,6 +291,9 @@ After(2, function()                         -- 延迟加载
         cell.channelIsInterruptible:clearCell() -- 单位通道是否可中断
     end
 
+    -- 施法和通道状态变化时刷新焦点的施法显示。
+    -- 事件用途：处理 UNIT_SPELLCAST_* 这一组事件。
+    -- 2 秒补正：由 updateCastAndChannel 单独补正。
     function eventFrame.UNIT_SPELLCAST_INTERRUPTED()
         updateCastAndChannel()
     end
@@ -329,8 +345,9 @@ After(2, function()                         -- 延迟加载
     eventFrame:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_START", UNIT_KEY)
     eventFrame:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_STOP", UNIT_KEY)
 
-    -- 更新施法和通道进度
-    -- 高频刷新
+    -- 更新施法和通道的进度颜色。
+    -- 无可靠事件可持续驱动进度。
+    -- 0.1 秒轮询，当前无 2 秒单独补正。
     local function updateCastAndChannelDuration()
         if not unitExists then
             return
@@ -351,6 +368,9 @@ After(2, function()                         -- 延迟加载
         end
     end
 
+    -- 当前焦点格子的整组刷新。
+    -- 用于焦点切换和初始化。
+    -- 2 秒补正不走 updateAll，而是按状态分项补正。
     updateAll = function()
         updateUnitExists()
         updateClassAndRole()

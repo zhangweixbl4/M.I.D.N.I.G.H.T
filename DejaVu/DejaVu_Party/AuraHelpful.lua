@@ -39,7 +39,9 @@ After(2, function()
 
         local eventFrame = CreateFrame("Frame")
 
-
+        -- Aura 列表变化时按当前限制做整组刷新。
+        -- 事件用途：处理当前 party 槽位的增益结构变化。
+        -- 当前没有 2 秒全量补正，只有 0.1 秒的剩余时间补正。
         function eventFrame:UNIT_AURA(unitToken, info)
             -- 因为无法判断isHarmful还是isHelpful，所以只能全量刷新。这个问题在12.0.5修正。等那时候补回来。
 
@@ -69,13 +71,21 @@ After(2, function()
                 return -- 因为完全刷新了，所以return就行了
             end
         end
+        eventFrame:RegisterUnitEvent("UNIT_AURA", UNIT_KEY)
 
+        -- 队友旗标变化时重刷当前 party 槽位的增益显示。
+        -- 事件用途：处理上下线和可交互状态变化。
+        -- 当前没有单独 2 秒补正。
         function eventFrame:UNIT_FLAGS(unitToken)
             controller.refreshAll()
         end
+        eventFrame:RegisterUnitEvent("UNIT_FLAGS", UNIT_KEY)
 
         local GroupChangeOnFrame = false
 
+        -- 队伍名单变化时重刷当前 party 槽位。
+        -- 事件用途：处理 party 槽位整体换人。
+        -- 当前没有单独 2 秒补正。
         function eventFrame:GROUP_ROSTER_UPDATE()
             if GroupChangeOnFrame then
                 return
@@ -83,7 +93,11 @@ After(2, function()
             GroupChangeOnFrame = true
             controller.refreshAll()
         end
+        eventFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
 
+        -- 加入队伍时重刷当前 party 槽位。
+        -- 事件用途：处理新 party 结构建立。
+        -- 当前没有单独 2 秒补正。
         function eventFrame:GROUP_JOINED()
             if GroupChangeOnFrame then
                 return
@@ -91,7 +105,11 @@ After(2, function()
             GroupChangeOnFrame = true
             controller.refreshAll()
         end
+        eventFrame:RegisterEvent("GROUP_JOINED")
 
+        -- 离开队伍时重刷当前 party 槽位。
+        -- 事件用途：处理 party 槽位清空或前移。
+        -- 当前没有单独 2 秒补正。
         function eventFrame:GROUP_LEFT()
             if GroupChangeOnFrame then
                 return
@@ -99,7 +117,11 @@ After(2, function()
             GroupChangeOnFrame = true
             controller.refreshAll()
         end
+        eventFrame:RegisterEvent("GROUP_LEFT")
 
+        -- 新队伍形成时重刷当前 party 槽位。
+        -- 事件用途：处理 party 槽位整体重建。
+        -- 当前没有单独 2 秒补正。
         function eventFrame:GROUP_FORMED()
             if GroupChangeOnFrame then
                 return
@@ -107,42 +129,30 @@ After(2, function()
             GroupChangeOnFrame = true
             controller.refreshAll()
         end
-
-        --         事件名称	参数	说明
-        -- GROUP_ROSTER_UPDATE	无	⭐ 队伍名单更新 — 最常用的成员变化事件，任何成员加入/离开/变更时触发
-        -- RAID_ROSTER_UPDATE	无	团队名单更新（旧版，现已被 GROUP_ROSTER_UPDATE 统一）
-        -- GROUP_JOINED	category, partyGUID	玩家加入队伍/团队
-        -- GROUP_LEFT	category, partyGUID	玩家离开队伍/团队
-        -- GROUP_FORMED	category, partyGUID	新队伍形成
-        eventFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
-        eventFrame:RegisterEvent("GROUP_JOINED")
-        eventFrame:RegisterEvent("GROUP_LEFT")
         eventFrame:RegisterEvent("GROUP_FORMED")
-        eventFrame:RegisterUnitEvent("UNIT_FLAGS", UNIT_KEY)
-        eventFrame:RegisterUnitEvent("UNIT_AURA", UNIT_KEY)
         eventFrame:SetScript("OnEvent", function(self, event, ...)
             self[event](self, ...)
         end)
 
         local fastTimeElapsed = -random()     -- 随机初始时间，避免所有事件在同一帧更新
-        local lowTimeElapsed = -random()      -- 随机初始时间，避免所有事件在同一帧更新
-        local superLowTimeElapsed = -random() -- 随机初始时间，避免所有事件在同一帧更新
+        -- local lowTimeElapsed = -random()      -- 当前未使用，保留 0.5 秒刷新档位结构
+        -- local superLowTimeElapsed = -random() -- 当前未使用，保留 2 秒刷新档位结构
         eventFrame:HookScript("OnUpdate", function(frame, elapsed)
-            GroupChangeOnFrame = false
+            GroupChangeOnFrame = false -- 每帧重置，避免同一帧内重复处理多个队伍结构事件
             fastTimeElapsed = fastTimeElapsed + elapsed
             if fastTimeElapsed > 0.1 then
                 fastTimeElapsed = fastTimeElapsed - 0.1
                 controller.updateRemainingAll()
             end
-            lowTimeElapsed = lowTimeElapsed + elapsed
-            if lowTimeElapsed > 0.5 then
-                lowTimeElapsed = lowTimeElapsed - 0.5
-            end
-            superLowTimeElapsed = superLowTimeElapsed + elapsed
-            if superLowTimeElapsed > 2 then
-                superLowTimeElapsed = superLowTimeElapsed - 2
-                -- controller.refreshAll()
-            end
+            -- lowTimeElapsed = lowTimeElapsed + elapsed
+            -- if lowTimeElapsed > 0.5 then
+            --     lowTimeElapsed = lowTimeElapsed - 0.5
+            -- end
+            -- superLowTimeElapsed = superLowTimeElapsed + elapsed
+            -- if superLowTimeElapsed > 2 then
+            --     superLowTimeElapsed = superLowTimeElapsed - 2
+            --     controller.refreshAll()
+            -- end
         end)
     end
 end)
