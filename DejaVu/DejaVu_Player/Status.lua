@@ -145,7 +145,7 @@ After(2, function()                                     -- 延迟加载
     -- 基于 UNIT_HEALTH 和 UNIT_MAXHEALTH 事件。
     -- 2 秒补正。
     local function updateHealth()
-        cell.healthPercent:setCell(UnitHealthPercent("player", true, zeroToOneCurve)) -- 单位生命值百分比
+        cell.healthPercent:setCell(UnitHealthPercent("player", false, zeroToOneCurve)) -- 单位生命值百分比
     end
 
     -- 最大生命值变化时刷新生命值百分比。
@@ -170,7 +170,7 @@ After(2, function()                                     -- 延迟加载
     -- 基于 UNIT_POWER_UPDATE 事件。
     -- 2 秒补正。
     local function updatePower()
-        cell.powerPercent:setCell(UnitPowerPercent("player", UnitPowerType("player"), true, zeroToOneCurve)) -- 单位能量百分比
+        cell.powerPercent:setCell(UnitPowerPercent("player", UnitPowerType("player"), false, zeroToOneCurve)) -- 单位能量百分比
     end
 
     -- 主能量变化时刷新能量百分比。

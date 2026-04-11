@@ -145,7 +145,7 @@ After(2, function()                         -- 延迟加载
             return
         end
 
-        cell.healthPercent:setCell(UnitHealthPercent(UNIT_KEY, true, zeroToOneCurve)) -- 单位生命值百分比
+        cell.healthPercent:setCell(UnitHealthPercent(UNIT_KEY, false, zeroToOneCurve)) -- 单位生命值百分比
     end
 
     -- 最大生命值变化时刷新生命值百分比。
@@ -173,7 +173,7 @@ After(2, function()                         -- 延迟加载
             return
         end
 
-        cell.powerPercent:setCell(UnitPowerPercent(UNIT_KEY, UnitPowerType(UNIT_KEY), true, zeroToOneCurve)) -- 单位能量百分比
+        cell.powerPercent:setCell(UnitPowerPercent(UNIT_KEY, UnitPowerType(UNIT_KEY), false, zeroToOneCurve)) -- 单位能量百分比
     end
 
     -- 能量变化时刷新能量百分比。

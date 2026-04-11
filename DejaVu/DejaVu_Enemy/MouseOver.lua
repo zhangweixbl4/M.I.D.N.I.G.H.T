@@ -138,7 +138,7 @@ After(2, function()                         -- 延迟加载
             return
         end
 
-        cell.healthPercent:setCell(UnitHealthPercent(UNIT_KEY, true, zeroToOneCurve)) -- 单位生命值百分比
+        cell.healthPercent:setCell(UnitHealthPercent(UNIT_KEY, false, zeroToOneCurve)) -- 单位生命值百分比
     end
 
     -- function eventFrame.UNIT_MAXHEALTH()
@@ -160,7 +160,7 @@ After(2, function()                         -- 延迟加载
             return
         end
 
-        cell.powerPercent:setCell(UnitPowerPercent(UNIT_KEY, UnitPowerType(UNIT_KEY), true, zeroToOneCurve)) -- 单位能量百分比
+        cell.powerPercent:setCell(UnitPowerPercent(UNIT_KEY, UnitPowerType(UNIT_KEY), false, zeroToOneCurve)) -- 单位能量百分比
     end
 
     -- function eventFrame.UNIT_POWER_UPDATE()
@@ -363,7 +363,7 @@ After(2, function()                         -- 延迟加载
         updateCastAndChannelDuration()
     end
 
-    local fastTimeElapsed = -random()     -- 0.1 秒轮询 mouseover 整组状态
+    local fastTimeElapsed = -random() -- 0.1 秒轮询 mouseover 整组状态
     -- local lowTimeElapsed = -random()      -- 当前未使用，保留 0.5 秒刷新档位结构
     -- local superLowTimeElapsed = -random() -- 当前未使用，保留 2 秒刷新档位结构
     eventFrame:HookScript("OnUpdate", function(_, elapsed)

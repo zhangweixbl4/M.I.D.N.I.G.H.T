@@ -126,7 +126,7 @@ After(2, function()
                 return
             end
 
-            cell.healthPercent:setCell(UnitHealthPercent(UNIT_KEY, true, zeroToOneCurve))
+            cell.healthPercent:setCell(UnitHealthPercent(UNIT_KEY, false, zeroToOneCurve))
         end
 
         -- 更新能量数据
@@ -137,7 +137,7 @@ After(2, function()
                 return
             end
 
-            cell.powerPercent:setCell(UnitPowerPercent(UNIT_KEY, UnitPowerType(UNIT_KEY), true, zeroToOneCurve))
+            cell.powerPercent:setCell(UnitPowerPercent(UNIT_KEY, UnitPowerType(UNIT_KEY), false, zeroToOneCurve))
         end
 
         -- 更新单位基础状态
@@ -374,7 +374,7 @@ After(2, function()
         local lowTimeElapsed = -random()      -- 随机初始时间，避免所有队友格子在同一帧中速刷新
         local superLowTimeElapsed = -random() -- 随机初始时间，避免所有队友格子在同一帧低频补正
         eventFrame:HookScript("OnUpdate", function(frame, elapsed)
-            GroupChangeOnFrame = false -- 每帧重置，避免同一帧内重复处理多个队伍结构事件
+            GroupChangeOnFrame = false        -- 每帧重置，避免同一帧内重复处理多个队伍结构事件
             -- fastTimeElapsed = fastTimeElapsed + elapsed
             -- if fastTimeElapsed > 0.1 then
             --     fastTimeElapsed = fastTimeElapsed - 0.1
