@@ -132,7 +132,7 @@ local function InitializePartyBar()
         -- insert(OnUpdateLow, updateOnParthChanged)
         -- insert(OnUpdateHigh, updateUnitExist)
         updateOnParthChanged()
-        insert(OnUpdateHigh, updateUnitExist)
+        insert(OnUpdateHigh, updateOnParthChanged)
     end
 end
 

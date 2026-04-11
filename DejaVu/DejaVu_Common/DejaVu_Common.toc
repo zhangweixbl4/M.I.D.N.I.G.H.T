@@ -7,7 +7,11 @@
 ## Category: DéjàVu
 ## IconTexture: Interface\Icons\Ability_Domination_Rune08
 
+Flash.lua
+DelayedUpdate.lua
+CombatTime.lua
 SpellQueueWindow.lua
+UseMouse.lua
 Burst.lua
 Enable.lua
 InterruptBlacklist.lua
