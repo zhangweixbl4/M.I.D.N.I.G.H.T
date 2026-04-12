@@ -106,7 +106,7 @@ local function InitializePartyBar()
 
         local function updateOnAuraEvent()
             local bigDefenseTable = GetUnitAuraInstanceIDs(unitToken, "HELPFUL|BIG_DEFENSIVE")
-            local dispellableDebuffTable = GetUnitAuraInstanceIDs(unitToken, "HARMFUL|RAID_PLAYER_DISPELLABLE")
+            local dispellableDebuffTable = GetUnitAuraInstanceIDs(unitToken, "HARMFUL_PLAYER_DISPELLABLE")
             cell.unitHasBigDefense:setCellBoolean(#bigDefenseTable > 0, COLOR.STATUS_BOOLEAN.HAS_BIG_DEFENSE, COLOR.BLACK)
             cell.unitHasDispellableDebuff:setCellBoolean(#dispellableDebuffTable > 0, COLOR.STATUS_BOOLEAN.HAS_DISPELLABLE_DEBUFF, COLOR.BLACK)
         end

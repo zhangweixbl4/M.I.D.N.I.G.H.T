@@ -14,7 +14,7 @@ local BASE_X = 1
 local BASE_Y = 9
 local UNIT_KEY = "player"
 -- local AURA_FILTER = "HARMFUL"
-local AURA_FILTER = "HARMFUL|RAID"
+local AURA_FILTER = "HARMFUL"
 local SORT_RULE = Enum.UnitAuraSortRule.Default
 local SORT_DIRECTION = Enum.UnitAuraSortDirection.Normal
 

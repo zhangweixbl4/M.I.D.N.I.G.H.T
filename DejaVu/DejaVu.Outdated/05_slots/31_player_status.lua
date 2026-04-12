@@ -259,7 +259,7 @@ local function InitializePlayerAuraStatus()
     cell.unitHasDispellableDebuff = Cell:New(53, 15) -- 有可驱散的减益效果
     local function updateOnEvent()
         local bigDefenseTable = GetUnitAuraInstanceIDs("player", "HELPFUL|BIG_DEFENSIVE")
-        local dispellableDebuffTable = GetUnitAuraInstanceIDs("player", "HARMFUL|RAID_PLAYER_DISPELLABLE")
+        local dispellableDebuffTable = GetUnitAuraInstanceIDs("player", "HARMFUL_PLAYER_DISPELLABLE")
         cell.unitHasBigDefense:setCellBoolean(#bigDefenseTable > 0, COLOR.STATUS_BOOLEAN.HAS_BIG_DEFENSE, COLOR.BLACK)
         cell.unitHasDispellableDebuff:setCellBoolean(#dispellableDebuffTable > 0, COLOR.STATUS_BOOLEAN.HAS_DISPELLABLE_DEBUFF, COLOR.BLACK)
     end
