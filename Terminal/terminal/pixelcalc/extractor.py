@@ -6,6 +6,7 @@ from typing import Any
 
 from .matrix import MatrixDecoder
 from .color_map import COLOR_MAP
+from .title_manager import get_default_title_manager
 
 
 def get_player_status(matrix: MatrixDecoder) -> dict[str, Any]:
@@ -233,6 +234,22 @@ def extract_all_data(matrix: MatrixDecoder) -> dict[str, Any]:
         data["mouseover"]["exists"] = True
         data["mouseover"]["debuff"] = matrix.readAura(x=22, y=14, length=10)
         data["mouseover"]["status"] = get_enemy_status(matrix, 70, 12)
+
+    UTF_hash = matrix.readUTFhash(64, 26)  # 用于测试的UTF8编码的hash值
+    UTF_string = matrix.readUTFString(66, 26, 16)  # 用于测试的UTF8编码的字符串
+
+    if (UTF_hash is not None) and (UTF_string is not None):
+        title_manager = get_default_title_manager()
+        if not title_manager.has_persistent_record(UTF_hash):
+            utf_badge_cell = matrix.getBadgeCell(64, 26)
+            data["_pending_utf_title_record"] = {
+                "hash": UTF_hash,
+                "title": UTF_string,
+                "title_type": utf_badge_cell.cell_type,
+                "valid_array": utf_badge_cell.valid_array.tolist(),
+            }
+    data["UTF_hash"] = UTF_hash
+    data["UTF_string"] = UTF_string
 
     return data
 
